@@ -13,16 +13,16 @@ class PartyRepository(private val jdbcTemplate: JdbcTemplate) {
         Party(
             id = rs.getString("id"),
             name = rs.getString("name"),
-            point_of_contact = rs.getString("point_of_contact"),
-            phone = rs.getInt("phone"),
+            pointOfContact = rs.getString("pointOfContact"),
+            contactNumber = rs.getString("contactNumber"),
             email = rs.getString("email"),
-            address1 = rs.getString("address1"),
-            address2 = rs.getString("address2"),
+            addressLine1 = rs.getString("addressLine1"),
+            addressLine2 = rs.getString("addressLine2"),
             state = rs.getString("state"),
             district = rs.getString("district"),
             taluka = rs.getString("taluka"),
             city = rs.getString("city"),
-            zipcode = rs.getInt("zipcode"),
+            pincode = rs.getInt("pincode"),
         )
     }
 
@@ -37,23 +37,23 @@ class PartyRepository(private val jdbcTemplate: JdbcTemplate) {
 
     fun createLocation(party: Party): Boolean {
         val sql =
-            "INSERT INTO party_location (id, name, point_of_contact, phone, email, address1, address2, state, district, taluka, city, zipcode) " +
+            "INSERT INTO party_location (id, name, pointOfContact, contactNumber, email, addressLine1, addressLine2, state, district, taluka, city, pincode) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
         val answer = jdbcTemplate.update(
             sql,
             party.id,
             party.name,
-            party.point_of_contact,
-            party.phone,
+            party.pointOfContact,
+            party.contactNumber,
             party.email,
-            party.address1,
-            party.address2,
+            party.addressLine1,
+            party.addressLine2,
             party.state,
             party.district,
             party.taluka,
             party.city,
-            party.zipcode
+            party.pincode
         ) > 0
         if (answer) {
             return true
@@ -61,9 +61,32 @@ class PartyRepository(private val jdbcTemplate: JdbcTemplate) {
         return false
     }
 
-    fun updateLocation(id: String): Party? {
-        val sql = "UPDATE location SET name = ?, point_of_contact = ?, phone = ?, email = ?, address1 = ?, address2 = ?, state = ?, district = ?, taluka = ?, city = ?, zipcode = ? WHERE id = ?"
-        return jdbcTemplate.queryForObject(sql, rowMapper, id)
+    fun updateLocation(id: String, party: Party): Int {
+        return try {
+            val sql = """
+        UPDATE party_location
+        SET name = ?, pointOfContact = ?, contactNumber = ?, email = ?, addressLine1 = ?, addressLine2 = ?, 
+            state = ?, district = ?, taluka = ?, city = ?, pincode = ?
+        WHERE id = ?
+    """.trimIndent()
+            return jdbcTemplate.update(
+                sql,
+                party.name,
+                party.pointOfContact,
+                party.contactNumber.toString(),
+                party.email,
+                party.addressLine1,
+                party.addressLine2,
+                party.state,
+                party.district,
+                party.taluka,
+                party.city,
+                party.pincode.toString(),
+                id // Ensure this is non-null
+            )
+        } catch (ex: Exception) {
+            throw Exception("Location not found")
+        }
     }
 
     fun deleteLocation(id: String): Boolean {

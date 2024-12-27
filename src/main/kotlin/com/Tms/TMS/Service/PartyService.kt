@@ -25,13 +25,21 @@ class PartyService(private val partyRepository: PartyRepository) {
         return partyRepository.createLocation(party)
     }
 
-    // update location
-    fun updateLocation(id: String): Party {
-        TODO()
+    fun updateLocation(id: String, party: Party): Party {
+        return try {
+            val updatedRows = partyRepository.updateLocation(id, party) ?: throw Exception("Location not found")
+            if(updatedRows > 0) {
+                return partyRepository.getLocationById(id) ?: throw Exception("Location not found")
+            } else {
+                throw Exception("Location not found")
+            }
+        } catch (ex: Exception) {
+            throw Exception("Location not found")
+        }
     }
 
     // delete location
     fun deleteLocation(id: String): Boolean {
-        TODO()
+        return partyRepository.deleteLocation(id)
     }
 }

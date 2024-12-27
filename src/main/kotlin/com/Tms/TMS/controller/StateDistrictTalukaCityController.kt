@@ -1,14 +1,14 @@
 package com.Tms.TMS.controller
 
-import com.Tms.TMS.Model.StateDistrictTalukaCities
-import com.Tms.TMS.Service.StateDTC
+import com.Tms.TMS.Model.DTO.StateDistrictTalukaCities
+import com.Tms.TMS.Service.StateDistrictTalukaCitiesService
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/v1")
 @CrossOrigin
 class StateDistrictTalukaCityController(
-    private val stateDistrictTalukaCityService: StateDTC
+    private val stateDistrictTalukaCityService: StateDistrictTalukaCitiesService
 ) {
     @GetMapping("/states/list")
     fun listStates(): List<String> {

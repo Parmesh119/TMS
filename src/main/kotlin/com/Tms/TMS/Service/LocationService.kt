@@ -19,17 +19,26 @@ class LocationService(private val locationRepository: LocationRepository) {
     }
 
     // Create new location
-    fun createLocation(location: Location): Boolean {
+    fun createLocation(location: Location): Location {
         return locationRepository.createLocation(location)
     }
 
     // update location
-    fun updateLocation(id: String): Location {
-        TODO()
+    fun updateLocation(id: String, location: Location): Location {
+        return try {
+            val updatedRows = locationRepository.updateLocation(id, location) ?: throw Exception("Location not found")
+            if(updatedRows > 0) {
+                return locationRepository.getLocationById(id) ?: throw Exception("Location not found")
+            } else {
+                throw Exception("Location not found")
+            }
+        } catch (ex: Exception) {
+            throw Exception("Location not found")
+        }
     }
 
     // delete location
     fun deleteLocation(id: String): Boolean {
-        TODO()
+        return locationRepository.deleteLocation(id)
     }
 }

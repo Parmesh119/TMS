@@ -1,6 +1,6 @@
 package com.Tms.TMS.Service
-import com.Tms.TMS.Model.StateDistrictTalukaCities
-import com.Tms.TMS.Model.StateDistrictTalukaCities.Locations
+import com.Tms.TMS.Model.DTO.StateDistrictTalukaCities
+import com.Tms.TMS.Model.DTO.StateDistrictTalukaCities.Locations
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Service
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -9,15 +9,12 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 
 @Service
-class StateDTC {
-    fun sayHello(): List<String> {
-        return listOf("hello")
-    }
+class StateDistrictTalukaCitiesService {
     private val locations: Locations
 
     init {
         val mapper = ObjectMapper(YAMLFactory()).registerKotlinModule()
-        val resource = ClassPathResource("data.yml")
+        val resource = ClassPathResource("taluka.yml")
         locations = mapper.readValue(resource.inputStream)
     }
 

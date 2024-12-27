@@ -11,16 +11,16 @@ class LocationRepository(private val jdbcTemplate: JdbcTemplate) {
         Location(
             id = rs.getString("id"),
             name = rs.getString("name"),
-            point_of_contact = rs.getString("point_of_contact"),
-            phone = rs.getInt("phone"),
+            pointOfContact = rs.getString("pointOfContact"),
+            contactNumber = rs.getString("contactNumber"),
             email = rs.getString("email"),
-            address1 = rs.getString("address1"),
-            address2 = rs.getString("address2"),
+            addressLine1 = rs.getString("addressLine1"),
+            addressLine2 = rs.getString("addressLine2"),
             state = rs.getString("state"),
             district = rs.getString("district"),
             taluka = rs.getString("taluka"),
             city = rs.getString("city"),
-            zipcode = rs.getInt("zipcode"),
+            pincode = rs.getString("pincode"),
         )
     }
 
@@ -33,36 +33,58 @@ class LocationRepository(private val jdbcTemplate: JdbcTemplate) {
         return jdbcTemplate.queryForObject("SELECT * FROM location WHERE id = ?", rowMapper, id)
     }
 
-    fun createLocation(location: Location): Boolean {
+    fun createLocation(location: Location): Location {
         val sql =
-            "INSERT INTO location (id, name, point_of_contact, phone, email, address1, address2, state, district, taluka, city, zipcode) " +
+            "INSERT INTO location (id, name,pointOfContact, contactNumber, email, addressLine1, addressLine2, state, district, taluka, city, pincode) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
         val answer = jdbcTemplate.update(
             sql,
             location.id,
             location.name,
-            location.point_of_contact,
-            location.phone,
+            location.pointOfContact,
+            location.contactNumber,
             location.email,
-            location.address1,
-            location.address2,
+            location.addressLine1,
+            location.addressLine2,
             location.state,
             location.district,
             location.taluka,
             location.city,
-            location.zipcode
+            location.pincode
         ) > 0
-        if (answer) {
-            return true
-        }
-        return false
+        val result = getLocationById(location.id!!)
+        return result ?: throw Exception("Failed to retrieve created location")
     }
 
-    fun updateLocation(id: String): Location? {
-        val sql = "UPDATE location SET name = ?, point_of_contact = ?, phone = ?, email = ?, address1 = ?, address2 = ?, state = ?, district = ?, taluka = ?, city = ?, zipcode = ? WHERE id = ?"
-        return jdbcTemplate.queryForObject(sql, rowMapper, id)
+    fun updateLocation(id: String, location: Location): Int {
+        return try {
+            val sql = """
+            UPDATE location
+            SET name = ?,pointOfContact = ?, contactNumber = ?, email = ?, addressLine1 = ?, addressLine2 = ?, 
+                state = ?, district = ?, taluka = ?, city = ?, pincode = ?
+            WHERE id = ?
+        """.trimIndent()
+            return jdbcTemplate.update(
+                sql,
+                location.name,
+                location.pointOfContact,
+                location.contactNumber.toString(),
+                location.email,
+                location.addressLine1,
+                location.addressLine2,
+                location.state,
+                location.district,
+                location.taluka,
+                location.city,
+                location.pincode.toString(),
+                id // This is where the ID should be passed to match the "WHERE id = ?"
+            )
+        } catch (ex: Exception) {
+            throw Exception("Location not found")
+        }
     }
+
 
     fun deleteLocation(id: String): Boolean {
         val sql = "DELETE FROM location WHERE id = ?"
