@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS party_location (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE employees (
+CREATE TABLE IF NOT EXISTS employees (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
@@ -38,12 +38,12 @@ CREATE TABLE employees (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE roles (
+CREATE TABLE IF NOT EXISTS roles (
     id TEXT PRIMARY KEY,
     role_name TEXT UNIQUE NOT NULL
 );
 
-CREATE TABLE employee_roles (
+CREATE TABLE IF NOT EXISTS employee_roles (
     id TEXT NOT NULL,
     role_id TEXT NOT NULL,
     PRIMARY KEY (id, role_id),
