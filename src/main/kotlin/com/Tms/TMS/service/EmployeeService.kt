@@ -1,11 +1,16 @@
 package com.Tms.TMS.service
 
 import com.Tms.TMS.model.Employee
+import com.Tms.TMS.model.RegisterRequest
 import com.Tms.TMS.repository.EmployeeRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
-class EmployeeService(private val employeeRepository: EmployeeRepository) {
+class EmployeeService(
+    private val employeeRepository: EmployeeRepository,
+    private val authService: AuthService
+) {
 
     fun getAllEmployee(): List<Employee> {
         return employeeRepository.getAllEmployee()
@@ -15,8 +20,23 @@ class EmployeeService(private val employeeRepository: EmployeeRepository) {
         return employeeRepository.getEmployeeById(id)?: throw Exception("Employee not found")
     }
 
+    @Transactional
     fun createEmployee(employee: Employee): Employee {
-        return employeeRepository.createEmployee(employee)
+//        val password = authService.generateRandomPassword(6)
+        val password = "abcd"
+        val createUser = RegisterRequest(
+            username = employee.email,
+            email = employee.email,
+            role = employee.role,
+            password = password
+        )
+        try {
+            authService.register(createUser)
+            return  employeeRepository.createEmployee(employee)
+        } catch (ex: Exception) {
+            print(ex.message)
+            throw Exception("Failed to create user")
+        }
     }
 
     fun updateEmployee(id: String, employee: Employee): Employee {

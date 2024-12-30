@@ -13,7 +13,7 @@ class MaterialController(private val materialService: MaterialService) {
     // Material Controller operations
     // List all materials
 
-    @PostMapping("/list")
+    @GetMapping("/list")
     fun listAllMaterials(): ResponseEntity<List<Material>> {
         // Implement logic to list all materials
         return ResponseEntity.ok(materialService.listAllMaterials())

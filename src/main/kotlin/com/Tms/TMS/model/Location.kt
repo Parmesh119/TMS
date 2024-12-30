@@ -1,9 +1,10 @@
 package com.Tms.TMS.model
 
+import org.springframework.data.annotation.Id
 import java.util.UUID
 
 data class Location (
-    val id: String? = UUID.randomUUID().toString(),
+    @Id val id: String? = UUID.randomUUID().toString(),
     val name: String,
     val pointOfContact: String?,
     val contactNumber: String?,

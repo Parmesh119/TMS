@@ -30,21 +30,26 @@ class EmployeeRepository(private val jdbcTemplate: JdbcTemplate) {
     }
 
     fun createEmployee(employee: Employee): Employee {
-        val sql =
-            "INSERT INTO employee (id, name, email, contactNumber, role) " +
-                    "VALUES (?, ?, ?, ?, ?)"
-
-        val answer = jdbcTemplate.update(
+        val sql = """
+        INSERT INTO employee (id, name, email, contactNumber, role)
+        VALUES (?, ?, ?, ?, ?)
+    """
+        val contactNumber = employee.contactNumber ?: "" // Default to an empty string if null
+        val rowsAffected = jdbcTemplate.update(
             sql,
             employee.id,
             employee.name,
-            employee.contactNumber,
             employee.email,
+            contactNumber,
             employee.role
-        ) > 0
-        val result = getEmployeeById(employee.id!!)
-        return result ?: throw Exception("Failed to retrieve created location")
+        )
+        if (rowsAffected > 0) {
+            return getEmployeeById(employee.id!!) ?: throw Exception("Failed to retrieve created employee")
+        } else {
+            throw Exception("Failed to create employee")
+        }
     }
+
 
     fun updateEmployee(id: String, employee: Employee): Int {
         return try {

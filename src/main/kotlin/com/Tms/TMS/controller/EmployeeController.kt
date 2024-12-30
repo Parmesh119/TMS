@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*
 
 @CrossOrigin
 @RestController
-@RequestMapping("/api/v1/employee")
+@RequestMapping("/api/v1/employees")
 class EmployeeController(private val employeeService: EmployeeService) {
 
     // List of all employee

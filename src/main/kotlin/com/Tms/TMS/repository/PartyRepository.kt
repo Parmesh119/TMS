@@ -4,8 +4,10 @@ import com.Tms.TMS.model.Party
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.stereotype.Component
+import org.springframework.stereotype.Repository
 
 @Component
+@Repository
 class PartyRepository(private val jdbcTemplate: JdbcTemplate) {
     private val rowMapper = RowMapper { rs, _ ->
         Party(

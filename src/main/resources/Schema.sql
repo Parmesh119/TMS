@@ -42,4 +42,14 @@ CREATE TABLE IF NOT EXISTS employee (
 CREATE TABLE IF NOT EXISTS material (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL
-)
+);
+
+CREATE TABLE IF NOT EXISTS Users (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    email TEXT,
+    passwordHash TEXT NOT NULL,
+    role TEXT DEFAULT 'User' NOT NULL,
+    refreshToken TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
