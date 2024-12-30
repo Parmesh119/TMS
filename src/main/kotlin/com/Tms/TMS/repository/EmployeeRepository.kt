@@ -4,8 +4,10 @@ import com.Tms.TMS.model.Employee
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.stereotype.Component
+import org.springframework.stereotype.Repository
 
 @Component
+@Repository
 class EmployeeRepository(private val jdbcTemplate: JdbcTemplate) {
 
     private val rowMapper = RowMapper { rs, _ ->
