@@ -1,6 +1,6 @@
-package com.Tms.TMS.Repository
+package com.Tms.TMS.repository
 
-import com.Tms.TMS.Model.Location
+import com.Tms.TMS.model.Location
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.stereotype.Component

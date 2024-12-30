@@ -1,6 +1,6 @@
-package com.Tms.TMS.Config
+package com.Tms.TMS.config
 
-import com.Tms.TMS.Model.StateDTC
+import com.Tms.TMS.model.StateDTC
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Configuration
 

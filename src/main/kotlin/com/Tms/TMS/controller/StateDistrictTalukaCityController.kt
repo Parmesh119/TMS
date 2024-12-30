@@ -1,7 +1,7 @@
 package com.Tms.TMS.controller
 
-import com.Tms.TMS.Model.DTO.StateDistrictTalukaCities
-import com.Tms.TMS.Service.StateDistrictTalukaCitiesService
+import com.Tms.TMS.model.DTO.StateDistrictTalukaCities
+import com.Tms.TMS.service.StateDistrictTalukaCitiesService
 import org.springframework.web.bind.annotation.*
 
 @RestController

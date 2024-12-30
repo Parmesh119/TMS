@@ -1,6 +1,6 @@
-package com.Tms.TMS.Service
-import com.Tms.TMS.Model.DTO.StateDistrictTalukaCities
-import com.Tms.TMS.Model.DTO.StateDistrictTalukaCities.Locations
+package com.Tms.TMS.service
+import com.Tms.TMS.model.DTO.StateDistrictTalukaCities
+import com.Tms.TMS.model.DTO.StateDistrictTalukaCities.Locations
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Service
 import com.fasterxml.jackson.databind.ObjectMapper

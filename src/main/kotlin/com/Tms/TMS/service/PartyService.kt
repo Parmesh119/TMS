@@ -1,9 +1,7 @@
-package com.Tms.TMS.Service
+package com.Tms.TMS.service
 
-import com.Tms.TMS.Model.Location
-import com.Tms.TMS.Model.Party
-import com.Tms.TMS.Repository.LocationRepository
-import com.Tms.TMS.Repository.PartyRepository
+import com.Tms.TMS.model.Party
+import com.Tms.TMS.repository.PartyRepository
 import org.springframework.stereotype.Service
 
 @Service

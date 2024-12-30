@@ -1,4 +1,4 @@
-package com.Tms.TMS.Model
+package com.Tms.TMS.model
 
 class StateDTC {
     data class locations(

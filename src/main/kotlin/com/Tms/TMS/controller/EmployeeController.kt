@@ -1,8 +1,7 @@
 package com.Tms.TMS.controller
 
-import com.Tms.TMS.Model.Employee
-import com.Tms.TMS.Repository.EmployeeRepository
-import com.Tms.TMS.Service.EmployeeService
+import com.Tms.TMS.model.Employee
+import com.Tms.TMS.service.EmployeeService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -34,7 +33,7 @@ class EmployeeController(private val employeeService: EmployeeService) {
     fun updateEmployee(@RequestBody employee: Employee): ResponseEntity<Employee> {
         return try {
             val id = employee.id!!
-            val updatedRows = ResponseEntity.ok(employeeService.updateEmployee(id, employee))
+            ResponseEntity.ok(employeeService.updateEmployee(id, employee))
             ResponseEntity.ok(employeeService.getEmployeeById(id))
         } catch (ex: Exception) {
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

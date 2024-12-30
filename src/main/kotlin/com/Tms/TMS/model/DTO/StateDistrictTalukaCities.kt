@@ -1,4 +1,4 @@
-package com.Tms.TMS.Model.DTO
+package com.Tms.TMS.model.DTO
 
 class StateDistrictTalukaCities {
 

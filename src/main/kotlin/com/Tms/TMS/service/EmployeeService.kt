@@ -1,7 +1,7 @@
-package com.Tms.TMS.Service
+package com.Tms.TMS.service
 
-import com.Tms.TMS.Model.Employee
-import com.Tms.TMS.Repository.EmployeeRepository
+import com.Tms.TMS.model.Employee
+import com.Tms.TMS.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 
 @Service

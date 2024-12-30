@@ -1,4 +1,4 @@
-package com.Tms.TMS.Config
+package com.Tms.TMS.config
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

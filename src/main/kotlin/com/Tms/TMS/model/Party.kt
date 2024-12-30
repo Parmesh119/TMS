@@ -1,9 +1,8 @@
-package com.Tms.TMS.Model
+package com.Tms.TMS.model
 
-import java.math.BigInteger
 import java.util.UUID
 
-data class Location (
+data class Party (
     val id: String? = UUID.randomUUID().toString(),
     val name: String,
     val pointOfContact: String?,
@@ -12,8 +11,8 @@ data class Location (
     val addressLine1: String?,
     val addressLine2: String?,
     val state: String?,
-    val district: String,
-    val taluka: String,
+    val district: String?,
+    val taluka: String?,
     val city: String?,
-    val pincode: String?,
+    val pincode: Int?,
 )

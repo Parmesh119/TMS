@@ -30,24 +30,12 @@ CREATE TABLE IF NOT EXISTS party_location (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS employees (
+CREATE TABLE IF NOT EXISTS employee (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     contactNumber TEXT,
+    role TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS roles (
-    id TEXT PRIMARY KEY,
-    role_name TEXT UNIQUE NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS employee_roles (
-    id TEXT NOT NULL,
-    role_id TEXT NOT NULL,
-    PRIMARY KEY (id, role_id),
-    FOREIGN KEY (id) REFERENCES employees(id) ON DELETE CASCADE,
-    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 );
 

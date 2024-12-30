@@ -1,10 +1,7 @@
 package com.Tms.TMS.controller
 
-import com.Tms.TMS.Model.Location
-import com.Tms.TMS.Model.Party
-import com.Tms.TMS.Service.LocationService
-import com.Tms.TMS.Service.PartyService
-import jakarta.servlet.http.Part
+import com.Tms.TMS.model.Party
+import com.Tms.TMS.service.PartyService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*

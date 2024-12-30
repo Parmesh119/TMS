@@ -1,9 +1,7 @@
 package com.Tms.TMS.controller
 
-import com.Tms.TMS.Model.DTO.StateDTCRequest
-import com.Tms.TMS.Model.DTO.StateDistrictTalukaCities
-import com.Tms.TMS.Model.StateDTC
-import com.Tms.TMS.Service.StateDTCService
+import com.Tms.TMS.model.DTO.StateDTCRequest
+import com.Tms.TMS.service.StateDTCService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 

@@ -1,9 +1,7 @@
-package com.Tms.TMS.Service
+package com.Tms.TMS.service
 
-import com.Tms.TMS.Config.StateDTCConfig
-import com.Tms.TMS.Model.DTO.StateDTCRequest
-import com.Tms.TMS.Model.DTO.StateDistrictTalukaCities
-import com.Tms.TMS.Model.StateDTC
+import com.Tms.TMS.config.StateDTCConfig
+import com.Tms.TMS.model.DTO.StateDTCRequest
 import org.springframework.stereotype.Service
 
 @Service

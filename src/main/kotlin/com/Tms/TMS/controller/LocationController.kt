@@ -1,8 +1,7 @@
 package com.Tms.TMS.controller
 
-import com.Tms.TMS.Model.Location
-import com.Tms.TMS.Model.StateDTC
-import com.Tms.TMS.Service.LocationService
+import com.Tms.TMS.model.Location
+import com.Tms.TMS.service.LocationService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
