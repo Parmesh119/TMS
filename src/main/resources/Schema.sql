@@ -53,3 +53,27 @@ CREATE TABLE IF NOT EXISTS Users (
     refreshToken TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS DeliveryOrder (
+    id VARCHAR(255) PRIMARY KEY,
+    contractId TEXT,
+    partyId TEXT,
+    dateOfContract BIGINT,
+    status TEXT NOT NULL,
+    created_at BIGINT DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) * 1000 NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS DeliveryOrderItem (
+    id VARCHAR(255)  PRIMARY KEY,
+    deliveryOrderId VARCHAR(255)  NOT NULL,
+    district TEXT,
+    taluka TEXT,
+    locationId TEXT,
+    materialId TEXT,
+    quantity INT NOT NULL,
+    rate INT,
+    unit TEXT,
+    dueDate BIGINT,
+    status TEXT NOT NULL,
+    FOREIGN KEY (deliveryOrderId) REFERENCES DeliveryOrder(id)
+);

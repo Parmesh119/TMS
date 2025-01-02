@@ -22,8 +22,8 @@ class EmployeeService(
 
     @Transactional
     fun createEmployee(employee: Employee): Employee {
-//        val password = authService.generateRandomPassword(6)
-        val password = "abcd"
+        val password = authService.generateRandomPassword(6)
+        print(password)
         val createUser = RegisterRequest(
             username = employee.email,
             email = employee.email,
