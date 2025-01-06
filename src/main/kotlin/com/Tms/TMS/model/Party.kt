@@ -16,4 +16,13 @@ data class Party (
     val taluka: String?,
     val city: String?,
     val pincode: Int?,
+    val status: String
+)
+
+data class PartyListRequest(
+    val search: String,
+    val statuses: List<String> = emptyList(),
+    val page: Int = 1,
+    val size: Int = 10,
+    val getAll: Boolean = false
 )

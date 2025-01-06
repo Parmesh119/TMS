@@ -1,11 +1,10 @@
 package com.Tms.TMS.repository
 
-import com.Tms.TMS.model.deliveryOrderItems
-import com.Tms.TMS.model.deliveryorder
-import com.Tms.TMS.model.deliveryOrderSections
+import com.Tms.TMS.model.*
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 import java.sql.ResultSet
 import java.time.Instant
 import java.time.ZoneId
@@ -168,6 +167,7 @@ class DeliveryOrderRepository(private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
+    @Transactional
     fun update(order: deliveryorder): deliveryorder {
         try {
             val sql = """
@@ -205,5 +205,97 @@ class DeliveryOrderRepository(private val jdbcTemplate: JdbcTemplate) {
         } catch (e: Exception) {
             throw e
         }
+    }
+
+    private val deliveryOrderItemMetaDataMapper = RowMapper { rs: ResultSet, _: Int ->
+        DeliverOrderItemMetadata(
+            id = rs.getString("id"),
+            district = rs.getString("district"),
+            taluka = rs.getString("taluka"),
+            locationName = rs.getString("locationName"),
+            materialName = rs.getString("materialName"),
+            quantity = rs.getDouble("quantity"),
+            status = rs.getString("status"),
+            rate = rs.getDouble("rate"),
+            dueDate = rs.getLong("duedate"),
+            deliveredQuantity = 0.0,
+            inProgressQuantity = 0.0
+        )
+    }
+
+    fun getDeliveryOrderItemById(deliveryOrderId: String): List<DeliverOrderItemMetadata> {
+        return try {
+            val sql = """
+            select 
+                doi.id,
+                doi.district,
+                doi.taluka,
+                doi.quantity,
+                doi.status,
+                doi.rate,
+                doi.duedate,
+                m.name as materialName,
+                lo.name as locationName
+            from deliveryorderitem as doi
+            join location as lo on lo.id = doi.locationid
+            join material as m on m.id = doi.materialid
+            where doi.deliveryorderid = ?
+        """.trimIndent()
+
+            val items = jdbcTemplate.query(sql, deliveryOrderItemMetaDataMapper, deliveryOrderId)
+
+            // Fetch related DeliveryChallanItems and calculate delivered and inProgress quantities
+            items.forEach { item ->
+                calculateDeliveredAndInProgressQuantities(item)
+            }
+
+            return items
+        } catch (e: Exception) {
+            throw e;
+        }
+    }
+
+    private fun calculateDeliveredAndInProgressQuantities(item: DeliverOrderItemMetadata) {
+//        println("Calculating quantities for DeliveryOrderItem ID: ${item.id}")
+
+        val challanItemsSql = """
+            SELECT
+                dc.status,
+                dci.deliveringquantity
+            FROM deliverychallanitem as dci
+            JOIN deliverychallan as dc ON dci.deliverychallanid = dc.id
+            WHERE dci.deliveryorderitemid = ?
+        """.trimIndent()
+
+        val deliveryChallanItems = jdbcTemplate.query(
+            challanItemsSql,
+            { rs, _ ->
+                object {
+                    val status = rs.getString("status")
+                    val deliveringQuantity = rs.getDouble("deliveringquantity")
+                }
+            }, item.id
+        )
+//        println("Number of deliveryChallanItems found: ${deliveryChallanItems.size}")
+
+
+        var totalDeliveredQuantity = 0.0
+        var totalInProgressQuantity = 0.0
+
+        deliveryChallanItems.forEach {
+//            println("ChallanItem status: ${it.status}, deliveringQuantity: ${it.deliveringQuantity}")
+            when (it.status) {
+                "DELIVERED" -> totalDeliveredQuantity += it.deliveringQuantity
+                "IN_PROGRESS" -> totalInProgressQuantity += it.deliveringQuantity
+                "pending" -> totalInProgressQuantity += it.deliveringQuantity  // Treat "pending" as in-progress
+            }
+        }
+
+//        println("Total Delivered Quantity : ${totalDeliveredQuantity}")
+//        println("Total InProgress Quantity : ${totalInProgressQuantity}")
+
+
+        item.deliveredQuantity = totalDeliveredQuantity
+        item.inProgressQuantity = totalInProgressQuantity
     }
 }

@@ -21,7 +21,32 @@
 
         fun findByUsername(username: String): User? {
             val sql = "SELECT * FROM users WHERE email = ?"
+
             return jdbcTemplate.queryForObject(sql, rowMapper, username)
+        }
+
+        fun findByEmail(email: String): Int? {
+            return try {
+                val sql = "SELECT * FROM users WHERE email =?"
+                val res = jdbcTemplate.queryForObject(sql, rowMapper, email)
+                if(res != null) {
+                    val response = deleteByUsername(email)
+                    if(response) {
+                        return 1
+                    } else {
+                        return null
+                    }
+                } else {
+                    return null
+                }
+            } catch (ex: Exception) {
+                return null
+            }
+        }
+
+        fun deleteByUsername(username: String): Boolean {
+            val sql = "DELETE FROM users WHERE email = ?"
+            return jdbcTemplate.update(sql, username) > 0
         }
 
         fun save(user: User): User {

@@ -1,6 +1,8 @@
 package com.Tms.TMS.controller
 
+import com.Tms.TMS.model.Employee
 import com.Tms.TMS.model.Party
+import com.Tms.TMS.model.PartyListRequest
 import com.Tms.TMS.service.PartyService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -14,8 +16,8 @@ class PartyController(private val partyService: PartyService) {
 
     // List all location
     @PostMapping("/list")
-    fun listLocations(): ResponseEntity<List<Party>> {
-        return ResponseEntity.ok(partyService.getLocation())
+    fun listLocations(@RequestBody partyListRequest: PartyListRequest): ResponseEntity<List<Party>> {
+        return ResponseEntity.ok(partyService.getLocation(partyListRequest.search, partyListRequest.statuses, partyListRequest.page, partyListRequest.size, partyListRequest.getAll))
     }
 
     //    Get location by id
@@ -48,4 +50,13 @@ class PartyController(private val partyService: PartyService) {
         return partyService.deleteLocation(id)
     }
 
+    @GetMapping("/deactivate/{id}")
+    fun deactivateEmployee(@PathVariable id: String): ResponseEntity<Party> {
+        return ResponseEntity.ok(partyService.deactivateParty(id))
+    }
+
+    @GetMapping("/activate/{id}")
+    fun activateEmployee(@PathVariable id: String): ResponseEntity<Party> {
+        return ResponseEntity.ok(partyService.activateParty(id))
+    }
 }

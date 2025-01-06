@@ -44,3 +44,17 @@ data class deliveryOrderItems (
     val unit: String?,
     val dueDate: Long?,
 )
+
+data class DeliverOrderItemMetadata(
+    val id: String = UUID.randomUUID().toString(),
+    val district: String,
+    val taluka: String,
+    val locationName: String,
+    val materialName: String,
+    val quantity: Double,
+    val status: String,
+    val rate: Double?,
+    val dueDate: Long?,
+    var deliveredQuantity: Double = 0.0,
+    var inProgressQuantity: Double = 0.0
+)

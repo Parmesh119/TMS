@@ -1,5 +1,6 @@
 package com.Tms.TMS.controller
 
+import com.Tms.TMS.model.DeliverOrderItemMetadata
 import com.Tms.TMS.model.deliveryorder
 import com.Tms.TMS.service.DeliveryOrderService
 import org.springframework.http.HttpStatus
@@ -16,7 +17,7 @@ class DeliveryOrderController(private val deliveryOrderService: DeliveryOrderSer
     @PostMapping("/list")
     fun listAllDeliveryOrders(
         @RequestParam("page", defaultValue = "1") page: Int,
-        @RequestParam("size", defaultValue = "2") size: Int,
+        @RequestParam("size", defaultValue = "10") size: Int,
         @RequestParam("sortField", defaultValue = "created_at") sortField: String,
         @RequestParam("sortOrder", defaultValue = "desc") sortOrder: String
     ): ResponseEntity<List<deliveryorder>> {
@@ -82,5 +83,10 @@ class DeliveryOrderController(private val deliveryOrderService: DeliveryOrderSer
         } catch (ex: Exception) {
             ResponseEntity.internalServerError().body("An error occurred: ${ex.message}")
         }
+    }
+
+    @GetMapping("/list/delivery-order-items/{deliveryOrderId}")
+    fun listDeliveryOrderItems(@PathVariable deliveryOrderId: String): ResponseEntity<List<DeliverOrderItemMetadata>> {
+        return ResponseEntity.ok(deliveryOrderService.listDeliveryOrderItemsForDeliveryOrderId(deliveryOrderId))
     }
 }

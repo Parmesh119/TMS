@@ -1,6 +1,8 @@
 package com.Tms.TMS.repository
 
+import com.Tms.TMS.model.Employee
 import com.Tms.TMS.model.Party
+import org.springframework.data.crossstore.ChangeSetPersister
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.stereotype.Component
@@ -23,12 +25,47 @@ class PartyRepository(private val jdbcTemplate: JdbcTemplate) {
             taluka = rs.getString("taluka"),
             city = rs.getString("city"),
             pincode = rs.getInt("pincode"),
+            status = rs.getString("status")
         )
     }
 
-    fun getAlllocation(): List<Party> {
-        val sql = "SELECT * FROM party_location"
-        return jdbcTemplate.query(sql, rowMapper)
+    fun getAlllocation(
+        search: String,
+        status: List<String>,
+        page: Int,
+        size: Int,
+        getAll: Boolean
+    ): List<Party> {
+        try {
+            val sqlBuilder = StringBuilder("SELECT * FROM party_location WHERE 1=1")
+            if (status.isNotEmpty()) {
+                sqlBuilder.append(" AND status IN (${status.joinToString(",") { "'$it'" }})")
+            }
+
+            if (!search.isNullOrBlank()) {
+                sqlBuilder.append(" AND name ILIKE ?")
+            }
+
+            if (!getAll) {
+                sqlBuilder.append(" ORDER BY created_at DESC LIMIT ? OFFSET ?")
+            } else {
+                sqlBuilder.append(" ORDER BY created_at DESC")
+            }
+
+            val sql = sqlBuilder.toString()
+            val offset = (page - 1) * size
+            val queryParams = mutableListOf<Any>()
+
+            if (!search.isNullOrBlank()) {
+                queryParams.add("%$search%")
+            }
+            queryParams.add(size)
+            queryParams.add(offset)
+
+            return jdbcTemplate.query(sql, rowMapper, *queryParams.toTypedArray())
+        } catch (ex: Exception) {
+            throw ex
+        }
     }
 
     fun getLocationById(id: String): Party? {
@@ -96,5 +133,39 @@ class PartyRepository(private val jdbcTemplate: JdbcTemplate) {
             return true
         }
         return false
+    }
+
+    fun deactivateParty(id: String): Party {
+        try {
+            val updateCount = jdbcTemplate.update(
+                "UPDATE party_location SET status = 'inactive' WHERE id = ?",
+                id
+            )
+
+            if (updateCount == 0) {
+                throw ChangeSetPersister.NotFoundException()
+            }
+
+            return getLocationById(id) ?: throw Exception("Failed to retrieve updated employee")
+        } catch (ex: Exception) {
+            throw ex
+        }
+    }
+
+    fun activateParty(id: String): Party {
+        try {
+            val updateCount = jdbcTemplate.update(
+                "UPDATE party_location SET status = 'active' WHERE id = ?",
+                id
+            )
+
+            if (updateCount == 0) {
+                throw ChangeSetPersister.NotFoundException()
+            }
+
+            return getLocationById(id) ?: throw Exception("Failed to retrieve updated employee")
+        } catch (ex: Exception) {
+            throw ex
+        }
     }
 }

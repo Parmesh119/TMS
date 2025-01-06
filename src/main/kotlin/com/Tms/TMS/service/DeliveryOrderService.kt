@@ -1,5 +1,6 @@
 package com.Tms.TMS.service
 
+import com.Tms.TMS.model.DeliverOrderItemMetadata
 import com.Tms.TMS.model.deliveryorder
 import com.Tms.TMS.model.deliveryOrderSections
 import com.Tms.TMS.repository.DeliveryOrderItemRepository
@@ -57,5 +58,9 @@ class DeliveryOrderService(private val deliveryOrderRepository: DeliveryOrderRep
     fun deleteOrder(id: String): Int {
         // Implement logic to delete an existing delivery order
         return deliveryOrderRepository.deleteById(id)
+    }
+
+    fun listDeliveryOrderItemsForDeliveryOrderId(deliveryOrderId: String): List<DeliverOrderItemMetadata> {
+        return deliveryOrderRepository.getDeliveryOrderItemById(deliveryOrderId)
     }
 }

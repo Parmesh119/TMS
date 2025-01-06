@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS party_location (
     taluka TEXT,
     city TEXT,
     pincode INTEGER,
+    status TEXT NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS employee (
     email TEXT UNIQUE NOT NULL,
     contactNumber TEXT,
     role TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -49,7 +51,7 @@ CREATE TABLE IF NOT EXISTS Users (
     username TEXT NOT NULL,
     email TEXT,
     passwordHash TEXT NOT NULL,
-    role TEXT DEFAULT 'User' NOT NULL,
+    role TEXT DEFAULT 'admin' NOT NULL,
     refreshToken TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -77,3 +79,21 @@ CREATE TABLE IF NOT EXISTS DeliveryOrderItem (
     status TEXT NOT NULL,
     FOREIGN KEY (deliveryOrderId) REFERENCES DeliveryOrder(id)
 );
+
+CREATE TABLE IF NOT EXISTS deliveryChallan (
+    id VARCHAR(255) PRIMARY KEY,
+    deliveryOrderId VARCHAR(255) NOT NULL REFERENCES DeliveryOrder(id) ON DELETE CASCADE,
+    status VARCHAR(255),
+    created_at BIGINT,
+    updated_at BIGINT,
+    dateOfChallan BIGINT,
+    totaldeliveringquantity DOUBLE PRECISION DEFAULT 0.0
+);
+
+CREATE TABLE IF NOT EXISTS deliveryChallanItem (
+    id VARCHAR(255) PRIMARY KEY,
+    deliveryChallanId VARCHAR(255) REFERENCES deliveryChallan(id) ON DELETE CASCADE,
+    deliveryOrderItemId VARCHAR(255) REFERENCES deliveryorderitem(id) ON DELETE CASCADE,
+    deliveringQuantity DOUBLE PRECISION DEFAULT 0.0
+);
+
