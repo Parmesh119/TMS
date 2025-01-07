@@ -29,21 +29,22 @@ class PartyRepository(private val jdbcTemplate: JdbcTemplate) {
         )
     }
 
-    fun getAlllocation(
+    fun listParties(
         search: String,
-        status: List<String>,
         page: Int,
         size: Int,
+        statuses: List<String>,
         getAll: Boolean
     ): List<Party> {
         try {
             val sqlBuilder = StringBuilder("SELECT * FROM party_location WHERE 1=1")
-            if (status.isNotEmpty()) {
-                sqlBuilder.append(" AND status IN (${status.joinToString(",") { "'$it'" }})")
+
+            if (search.isNotBlank()) {
+                sqlBuilder.append(" AND name ILIKE ?")
             }
 
-            if (!search.isNullOrBlank()) {
-                sqlBuilder.append(" AND name ILIKE ?")
+            if (statuses.isNotEmpty()) {
+                sqlBuilder.append(" AND status IN (${statuses.joinToString(",") { "'$it'" }})")
             }
 
             if (!getAll) {
@@ -53,18 +54,25 @@ class PartyRepository(private val jdbcTemplate: JdbcTemplate) {
             }
 
             val sql = sqlBuilder.toString()
-            val offset = (page - 1) * size
-            val queryParams = mutableListOf<Any>()
-
-            if (!search.isNullOrBlank()) {
-                queryParams.add("%$search%")
+            val parties = if (search.isNotBlank()) {
+                if (getAll) {
+                    jdbcTemplate.query(sql, rowMapper, "%$search%")
+                } else {
+                    val offset = (page - 1) * size
+                    jdbcTemplate.query(sql, rowMapper, "%$search%", size, offset)
+                }
+            } else {
+                if (getAll) {
+                    jdbcTemplate.query(sql, rowMapper)
+                } else {
+                    val offset = (page - 1) * size
+                    jdbcTemplate.query(sql, rowMapper, size, offset)
+                }
             }
-            queryParams.add(size)
-            queryParams.add(offset)
 
-            return jdbcTemplate.query(sql, rowMapper, *queryParams.toTypedArray())
-        } catch (ex: Exception) {
-            throw ex
+            return parties
+        } catch (e: Exception) {
+            throw e
         }
     }
 

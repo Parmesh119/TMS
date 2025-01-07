@@ -25,7 +25,9 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
                 status = "in-progress",
                 created_at = Instant.now().epochSecond,
                 updated_at = Instant.now().epochSecond,
-                dateOfChallan = Instant.now().epochSecond
+                dateOfChallan = Instant.now().epochSecond,
+                totalDeliveringQuantity = 0.0,
+                partyName = deliveryOrder.partyName
             )
             return deliveryChallanRepository.create(deliveryChallan)
         } catch (ex: Exception) {
@@ -114,19 +116,31 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
             if (deliveryChallan.id == null) {
                 throw Exception("Delivery Challan ID is required")
             }
-            val existingDeliveryChallan = deliveryChallanRepository.findById(deliveryChallan.id!!)
-                ?: throw Exception("Delivery Challan not found")
+            val existingDeliveryChallan = deliveryChallanRepository.findById(deliveryChallan.id)
+            if(existingDeliveryChallan == null) {
+                throw Exception("Delivery Challan not found")
+            }
 
             val updatedChallan = existingDeliveryChallan.copy(
-                deliveryChallanItems = deliveryChallan.deliveryChallanItems.map {
-                    it.takeUnless { it.id == null } ?: it.copy(id = UUID.randomUUID().toString())
+                deliveryChallanItems = deliveryChallan.deliveryChallanItems.map { item ->
+                    if (item.id == null) {
+                        // For new items, preserve deliveryorderItemId while generating new id
+                        item.copy(
+                            id = UUID.randomUUID().toString(),
+                            deliveryChallanId = deliveryChallan.id,
+
+                        )
+                    } else {
+                        // For existing items, preserve all fields including deliveryorderItemId
+                        item
+                    }
                 },
                 status = deliveryChallan.status,
                 partyName = deliveryChallan.partyName,
                 totalDeliveringQuantity = deliveryChallan.totalDeliveringQuantity,
                 updated_at = Instant.now().epochSecond
             )
-            return deliveryChallanRepository.update(updatedChallan)
+            deliveryChallanRepository.update(updatedChallan)
         } catch (ex: Exception) {
             throw Exception(ex.message)
         }

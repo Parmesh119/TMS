@@ -11,14 +11,20 @@ import org.springframework.stereotype.Service
 class PartyService(private val partyRepository: PartyRepository) {
 
     // List of all location
-    fun getLocation(
+    fun listParties(
         search: String,
-        status: List<String>,
         page: Int,
         size: Int,
+        statuses: List<String>,
         getAll: Boolean
     ): List<Party> {
-        return partyRepository.getAlllocation(search, status, page, size, getAll)
+        return partyRepository.listParties(
+            search = search,
+            page = page,
+            size = size,
+            statuses = statuses,
+            getAll = getAll
+        )
     }
 
     // Get location by Id

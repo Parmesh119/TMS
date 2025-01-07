@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS location (
     taluka TEXT NOT NULL,
     city TEXT,
     pincode VARCHAR(255),
+    status TEXT NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -73,10 +74,10 @@ CREATE TABLE IF NOT EXISTS DeliveryOrderItem (
     locationId TEXT,
     materialId TEXT,
     quantity INT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
     rate INT,
     unit TEXT,
     dueDate BIGINT,
-    status TEXT NOT NULL,
     FOREIGN KEY (deliveryOrderId) REFERENCES DeliveryOrder(id)
 );
 

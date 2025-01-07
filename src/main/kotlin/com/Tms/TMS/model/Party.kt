@@ -19,10 +19,10 @@ data class Party (
     val status: String
 )
 
-data class PartyListRequest(
-    val search: String,
-    val statuses: List<String> = emptyList(),
+data class ListPartiesInput(
+    val search: String = "",
     val page: Int = 1,
     val size: Int = 10,
-    val getAll: Boolean = false
+    val getAll: Boolean = false,
+    val statuses: List<String> = emptyList()
 )

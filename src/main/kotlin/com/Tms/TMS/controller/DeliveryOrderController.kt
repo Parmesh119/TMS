@@ -1,6 +1,8 @@
 package com.Tms.TMS.controller
 
 import com.Tms.TMS.model.DeliverOrderItemMetadata
+import com.Tms.TMS.model.ListDeliveryOrderItem
+import com.Tms.TMS.model.deliveryOrderInput
 import com.Tms.TMS.model.deliveryorder
 import com.Tms.TMS.service.DeliveryOrderService
 import org.springframework.http.HttpStatus
@@ -16,18 +18,25 @@ class DeliveryOrderController(private val deliveryOrderService: DeliveryOrderSer
     // List all delivery orders
     @PostMapping("/list")
     fun listAllDeliveryOrders(
-        @RequestParam("page", defaultValue = "1") page: Int,
-        @RequestParam("size", defaultValue = "10") size: Int,
-        @RequestParam("sortField", defaultValue = "created_at") sortField: String,
-        @RequestParam("sortOrder", defaultValue = "desc") sortOrder: String
-    ): ResponseEntity<List<deliveryorder>> {
-        // Implement logic to list all delivery orders
+        @RequestBody listInput: deliveryOrderInput
+    ): ResponseEntity<List<ListDeliveryOrderItem>> {
         return try {
-            ResponseEntity.ok(deliveryOrderService.listAllDeliveryOrder(page, size, sortField, sortOrder))
+            ResponseEntity.ok(
+                deliveryOrderService.listAllDeliveryOrder(
+                    search = listInput.search,
+                    page = listInput.page,
+                    size = listInput.size,
+                    status = listInput.statuses,
+                    partyId = listInput.partyIds,
+                    fromDate = listInput.fromDate,
+                    toDate = listInput.toDate
+                )
+            )
         } catch (ex: Exception) {
             throw ex
         }
     }
+
 
     // get by id
     @GetMapping("/get/{id}")
@@ -36,7 +45,7 @@ class DeliveryOrderController(private val deliveryOrderService: DeliveryOrderSer
         return try {
             ResponseEntity.ok(deliveryOrderService.getDeliveryOrderById(id))
         } catch (ex: Exception) {
-            ResponseEntity.notFound().build()
+           throw ex
         }
     }
 
@@ -45,10 +54,11 @@ class DeliveryOrderController(private val deliveryOrderService: DeliveryOrderSer
     fun createDeliveryOrder(@RequestBody orderRequest: deliveryorder): ResponseEntity<deliveryorder> {
         // Implement logic to create a new delivery order
         val deliveryOrderSections = orderRequest.deliveryOrderSections ?: emptyList();
+        println(deliveryOrderSections)
         return try {
             ResponseEntity.ok(deliveryOrderService.createDeliveryOrder(orderRequest, deliveryOrderSections).body)
         } catch (ex: Exception) {
-            ResponseEntity.internalServerError().body(orderRequest)
+            throw ex
         }
     }
 

@@ -1,6 +1,7 @@
 package com.Tms.TMS.service
 
 import com.Tms.TMS.model.DeliverOrderItemMetadata
+import com.Tms.TMS.model.ListDeliveryOrderItem
 import com.Tms.TMS.model.deliveryorder
 import com.Tms.TMS.model.deliveryOrderSections
 import com.Tms.TMS.repository.DeliveryOrderItemRepository
@@ -15,11 +16,27 @@ class DeliveryOrderService(private val deliveryOrderRepository: DeliveryOrderRep
     // Delivery Order Service operations
 
     // List all delivery orders
-    fun listAllDeliveryOrder(page: Int, size: Int, sortField: String, sortOrder: String): List<deliveryorder> {
-        // Implement logic to list all delivery orders
+    fun listAllDeliveryOrder(
+        search: String,
+        page: Int,
+        size: Int,
+        status: List<String>,
+        partyId: List<String>,
+        fromDate: Long?,
+        toDate: Long?
+    ): List<ListDeliveryOrderItem> {
         val offset = (page - 1) * size
-        return deliveryOrderRepository.findAll(size, offset, sortField, sortOrder)
+        return deliveryOrderRepository.findAll(
+            search = search,
+            page = page,
+            size = size,
+            status = status,
+            partyId = partyId,
+            fromDate = fromDate,
+            toDate = toDate
+        )
     }
+
 
     // get by id
     fun getDeliveryOrderById(id: String): deliveryorder? {
@@ -61,6 +78,6 @@ class DeliveryOrderService(private val deliveryOrderRepository: DeliveryOrderRep
     }
 
     fun listDeliveryOrderItemsForDeliveryOrderId(deliveryOrderId: String): List<DeliverOrderItemMetadata> {
-        return deliveryOrderRepository.getDeliveryOrderItemById(deliveryOrderId)
+        return deliveryOrderRepository.listDeliverOrderItemMetadata(deliveryOrderId)
     }
 }

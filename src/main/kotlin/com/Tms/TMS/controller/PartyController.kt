@@ -1,8 +1,8 @@
 package com.Tms.TMS.controller
 
 import com.Tms.TMS.model.Employee
+import com.Tms.TMS.model.ListPartiesInput
 import com.Tms.TMS.model.Party
-import com.Tms.TMS.model.PartyListRequest
 import com.Tms.TMS.service.PartyService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -16,9 +16,19 @@ class PartyController(private val partyService: PartyService) {
 
     // List all location
     @PostMapping("/list")
-    fun listLocations(@RequestBody partyListRequest: PartyListRequest): ResponseEntity<List<Party>> {
-        return ResponseEntity.ok(partyService.getLocation(partyListRequest.search, partyListRequest.statuses, partyListRequest.page, partyListRequest.size, partyListRequest.getAll))
+    fun listParties(
+        @RequestBody listPartiesInput: ListPartiesInput
+    ): ResponseEntity<List<Party>> {
+        val parties = partyService.listParties(
+            search = listPartiesInput.search,
+            page = listPartiesInput.page,
+            size = listPartiesInput.size,
+            statuses = listPartiesInput.statuses,
+            getAll = listPartiesInput.getAll
+        )
+        return ResponseEntity.ok(parties)
     }
+
 
     //    Get location by id
     @GetMapping("/get/{id}")

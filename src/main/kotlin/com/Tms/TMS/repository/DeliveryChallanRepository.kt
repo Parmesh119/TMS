@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository
 import java.sql.ResultSet
 import java.time.Instant
 import java.time.ZoneId
+import java.util.*
 
 @Repository
 class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
@@ -52,13 +53,13 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
     fun update(deliveryChallan: DeliveryChallan): DeliveryChallan {
         try {
             val sql = """
-            UPDATE deliverychallan
-            SET
-                dateofchallan = ?,
-                status = ?,
-                totaldeliveringquantity = ?,
-                updated_at = ?
-            WHERE id = ?
+        UPDATE deliverychallan
+        SET
+            dateofchallan = ?,
+            status = ?,
+            totaldeliveringquantity = ?,
+            updated_at = ?
+        WHERE id = ?
         """
 
             val currentTime = Instant.now().toEpochMilli()
@@ -84,10 +85,7 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
 
             // Delete removed items
             if (itemsToDelete.isNotEmpty()) {
-                val deleteSql = """
-                    DELETE FROM deliverychallanitem
-                    WHERE id = ?
-                """.trimIndent()
+                val deleteSql = "DELETE FROM deliverychallanitem WHERE id = ?"
                 itemsToDelete.forEach { item ->
                     jdbcTemplate.update(deleteSql, item.id)
                 }
@@ -95,43 +93,64 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
 
             // Update existing items
             val updateItemSql = """
-                UPDATE deliverychallanitem
-                SET
-                    deliveringquantity = ?
-                WHERE id = ?
-            """.trimIndent()
+            UPDATE deliverychallanitem
+            SET
+                deliveringquantity = ?,
+                deliveryorderitemid = ?
+            WHERE id = ?
+        """
 
             itemsToUpdate.forEach { item ->
                 jdbcTemplate.update(
                     updateItemSql,
                     item.deliveringQuantity,
+                    item.deliveryOrderItemId,  // Make sure this is included
                     item.id
                 )
             }
 
             // Create new items
-            itemsToCreate.forEach { item ->
-                createItem(item)
-            }
+            val createItemSql = """
+            INSERT INTO deliverychallanitem (
+                id,
+                deliverychallanid,
+                deliveryorderitemid,
+                deliveringquantity
+            ) VALUES (?, ?, ?, ?)
+        """
 
-            return deliveryChallan
-        }catch (e: Exception){
-            throw e;
+            itemsToCreate.forEach { item ->
+                jdbcTemplate.update(
+                    createItemSql,
+                    item.id ?: UUID.randomUUID().toString(),
+                    deliveryChallan.id,
+                    item.deliveryOrderItemId,  // Explicitly include deliveryorderItemId
+                    item.deliveringQuantity
+                )
+            }
+            return findById(deliveryChallan.id) ?: throw Exception("Failed to retrieve updated delivery challan")
+        } catch (e: Exception) {
+            throw e
         }
     }
 
     fun createItem(item: DeliveryChallanItems): DeliveryChallanItems {
         try {
             val sql = """
-        INSERT INTO deliverychallanitem(id, deliverychallanid, deliveryorderitemid, deliveringQuantity)
-        VALUES (?, ?, ?, ?)
+            INSERT INTO deliverychallanitem(
+                id, 
+                deliverychallanid, 
+                deliveryorderitemid, 
+                deliveringquantity
+            )
+            VALUES (?, ?, ?, ?)
         """.trimIndent()
 
             jdbcTemplate.update(
                 sql,
-                item.id,
+                item.id ?: UUID.randomUUID().toString(),
                 item.deliveryChallanId,
-                item.deliveryorderItemId,
+                item.deliveryOrderItemId,  // Ensure this is included
                 item.deliveringQuantity
             )
 
@@ -145,16 +164,20 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
         return try {
             val sql = """
                 SELECT 
-                dc.*,
-                pl.name AS partyName
-                FROM deliverychallan as dc
-            LEFT JOIN deliveryorder as dord ON dc.deliveryOrderId = dord.id
-            LEFT JOIN party_location as pl ON dord.partyId = pl.id
-            WHERE dc.id = ?
+                    dc.*, 
+                    p.name AS partyName  -- Match model field
+                FROM 
+                    deliverychallan AS dc
+                LEFT JOIN 
+                    deliveryorder AS d_orders ON dc.deliveryorderid = d_orders.id
+                LEFT JOIN 
+                    party_location AS p ON d_orders.partyid = p.id
+                WHERE 
+                    dc.id = ?;
+
             """.trimIndent()
             val deliveryChallan = jdbcTemplate.queryForObject(sql, { rs, _ -> deliveryChallanRowMapper(rs) }, id) ?: return null
             val items = getChallanItemById(id)
-            print(items)
             deliveryChallan.copy(
                 deliveryChallanItems = items
             )
@@ -162,6 +185,132 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
         } catch (ex: Exception) {
             throw ex
         }
+    }
+
+//
+
+    fun getChallanItemById(id: String): List<DeliveryChallanItems> {
+        return try {
+            val sql = """
+            SELECT 
+        dci.*,
+        doi.district,
+        doi.taluka,
+        loc.name AS location_name,
+        mat.name AS material_name,
+        doi.quantity,
+        doi.rate, 
+        doi.duedate, 
+        COALESCE(SUM(CASE 
+            WHEN dc.status = 'delivered' THEN dci_sub.deliveringquantity 
+            ELSE 0 
+        END), 0) AS delivered_quantity
+    FROM 
+        deliverychallanitem dci
+    JOIN 
+        deliveryorderitem doi ON dci.deliveryorderitemid = doi.id
+    JOIN 
+        location loc ON doi.locationid = loc.id
+    JOIN 
+        material mat ON doi.materialid = mat.id
+    LEFT JOIN 
+        deliverychallanitem dci_sub ON dci_sub.deliveryorderitemid = doi.id
+    LEFT JOIN 
+        deliverychallan dc ON dci_sub.deliverychallanid = dc.id
+    WHERE 
+        dci.deliverychallanid = ?
+    GROUP BY 
+        dci.id, doi.id, doi.district, doi.taluka, loc.name, mat.name, 
+        doi.quantity, doi.rate, doi.duedate
+""".trimIndent()
+
+            jdbcTemplate.query(sql, { rs, _ ->
+                DeliveryChallanItems(
+                    id = rs.getString("id"),
+                    deliveryChallanId = rs.getString("deliverychallanid"),
+                    deliveryOrderItemId = rs.getString("deliveryorderitemid"),
+                    district = rs.getString("district"),
+                    taluka = rs.getString("taluka"),
+                    locationName = rs.getString("location_name"),
+                    materialName = rs.getString("material_name"),
+                    quantity = rs.getDouble("quantity"),
+                    rate = rs.getDouble("rate"),
+                    dueDate = rs.getLong("duedate"),
+                    deliveringQuantity = rs.getDouble("deliveringquantity")
+                )
+            }, id)
+        } catch (ex: Exception) {
+            println("Error in getChallanItemById: ${ex.message}")
+            ex.printStackTrace()
+            throw ex
+        }
+    }
+
+    fun findDeliveryOrderIdByChallanId(challanId: String): String? {
+        val sql = """
+        SELECT deliveryOrderId
+        FROM deliveryChallan
+        WHERE id = ?
+    """
+        return jdbcTemplate.queryForObject(sql, String::class.java, challanId)
+    }
+
+    fun findIdsByDeliveryOrderId(deliveryOrderId: String): List<String> {
+        val sql = """
+        SELECT id
+        FROM deliveryOrderItem
+        WHERE deliveryOrderId = ?
+    """
+        return jdbcTemplate.queryForList(sql, String::class.java, deliveryOrderId)
+    }
+
+
+
+    fun deleteItem(id: String): Int {
+        val sql = "DELETE FROM deliverychallanitem WHERE id = ?"
+        return jdbcTemplate.update(sql, id)
+    }
+
+
+    fun findAll(limit: Int, offset: Int, sortField: String, sortOrder: String): List<DeliveryChallan> {
+        return try {
+            val sql = """
+            SELECT 
+                dc.*,
+                pl.name AS partyName
+            FROM deliverychallan AS dc
+            LEFT JOIN deliveryorder AS dord ON dc.deliveryOrderId = dord.id
+            LEFT JOIN party_location AS pl ON dord.partyId = pl.id
+            ORDER BY dc.${sortField} ${sortOrder}
+            LIMIT ? OFFSET ?
+        """.trimIndent()
+
+            jdbcTemplate.query(sql, { rs, _ -> DeliveryChallan(
+                id = rs.getString("id"),
+                deliveryOrderId = rs.getString("deliveryOrderId"),
+                status = rs.getString("status"),
+                created_at = rs.getLong("created_at"),
+                updated_at = rs.getLong("updated_at"),
+                dateOfChallan = rs.getLong("dateOfChallan"),
+                totalDeliveringQuantity = 0.0,
+                partyName = rs.getString("partyName")
+            )}, limit, offset)
+        } catch (ex: Exception) {
+            if (!isValidSortField(sortField) || !isValidSortOrder(sortOrder)) {
+                throw IllegalArgumentException("Invalid sort parameters")
+            }
+            throw ex
+        }
+    }
+
+    // Add validation helpers
+    private fun isValidSortField(field: String): Boolean {
+        val validFields = setOf("created_at", "updated_at", "dateOfChallan", "status")
+        return validFields.contains(field)
+    }
+
+    private fun isValidSortOrder(order: String): Boolean {
+        return order.uppercase() in setOf("ASC", "DESC")
     }
 
 //    fun update(deliveryChallan: DeliveryChallan): Int? {
@@ -213,92 +362,7 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
 //        }
 //    }
 
-    fun getChallanItemById(id: String): List<DeliveryChallanItems> {
-        return try {
-            val sql = """
-        SELECT 
-        dci.*,
-        doi.district,
-        doi.taluka,
-        loc.name AS locationName,
-        mat.name AS materialName,
-        doi.quantity,
-        doi.rate, 
-        doi.duedate, 
-        doi.status,
-        COALESCE(SUM(CASE 
-            WHEN dc.status = 'delivered' THEN dci_sub.deliveringquantity 
-            ELSE 0 
-        END), 0) AS delivered_quantity,
-        COALESCE(SUM(CASE 
-            WHEN dc.status = 'in-progress' THEN dci_sub.deliveringquantity 
-            ELSE 0 
-        END), 0) AS in_progress_quantity
-    FROM 
-        deliverychallanitem dci
-    JOIN 
-        deliveryorderitem doi ON dci.deliveryorderitemid = doi.id
-    JOIN 
-        location loc ON doi.locationid = loc.id
-    JOIN 
-        material mat ON doi.materialid = mat.id
-    LEFT JOIN 
-        deliverychallanitem dci_sub ON dci_sub.deliveryorderitemid = doi.id
-    LEFT JOIN 
-        deliverychallan dc ON dci_sub.deliverychallanid = dc.id
-    WHERE 
-        dci.deliverychallanid = ?
-    GROUP BY 
-        dci.id, doi.id, doi.district, doi.taluka, loc.name, mat.name, 
-        doi.quantity, doi.rate, doi.duedate, doi.status
-""".trimIndent()
-
-            return jdbcTemplate.query(sql, { rs, _ ->
-                DeliveryChallanItems(
-                    id = rs.getString("id"),
-                    deliveryChallanId = rs.getString("deliveryChallanId"),         // Changed to match DB column
-                    deliveryorderItemId = rs.getString("deliveryorderItemId"),     // Changed to match DB column
-                    district = rs.getString("district"),
-                    taluka = rs.getString("taluka"),
-                    locationName = rs.getString("locationName"),                  // Changed to match SQL alias
-                    materialName = rs.getString("materialName"),                  // Changed to match SQL alias
-                    quantity = rs.getDouble("quantity"),
-                    rate = rs.getDouble("rate"),
-                    dueDate = rs.getLong("dueDate"),                              // Changed to match DB column
-                    deliveringQuantity = rs.getDouble("deliveringQuantity")       // Changed to match DB column
-                )
-            }, id)
-        } catch (ex: Exception) {
-            throw ex
-        }
-    }
-
-    fun findDeliveryOrderIdByChallanId(challanId: String): String? {
-        val sql = """
-        SELECT deliveryOrderId
-        FROM deliveryChallan
-        WHERE id = ?
-    """
-        return jdbcTemplate.queryForObject(sql, String::class.java, challanId)
-    }
-
-    fun findIdsByDeliveryOrderId(deliveryOrderId: String): List<String> {
-        val sql = """
-        SELECT id
-        FROM deliveryOrderItem
-        WHERE deliveryOrderId = ?
-    """
-        return jdbcTemplate.queryForList(sql, String::class.java, deliveryOrderId)
-    }
-
-
-
-    fun deleteItem(id: String): Int {
-        val sql = "DELETE FROM deliverychallanitem WHERE id = ?"
-        return jdbcTemplate.update(sql, id)
-    }
-
-//    fun updateItem(updateItem: DeliveryChallanItems): Int {
+    //    fun updateItem(updateItem: DeliveryChallanItems): Int {
 //        return try {
 //            if (updateItem.deliveryorderItemId == null) {
 //                throw Exception("deliveryorderItemId cannot be null for update operation")
@@ -324,45 +388,5 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
 //            throw ex
 //        }
 //    }
-    fun findAll(limit: Int, offset: Int, sortField: String, sortOrder: String): List<DeliveryChallan> {
-        return try {
-            val sql = """
-            SELECT 
-                dc.*,
-                pl.name AS partyName
-            FROM deliverychallan AS dc
-            LEFT JOIN deliveryorder AS dord ON dc.deliveryOrderId = dord.id
-            LEFT JOIN party_location AS pl ON dord.partyId = pl.id
-            ORDER BY dc.${sortField} ${sortOrder}
-            LIMIT ? OFFSET ?
-        """.trimIndent()
-
-            jdbcTemplate.query(sql, { rs, _ -> DeliveryChallan(
-                id = rs.getString("id"),
-                deliveryOrderId = rs.getString("deliveryOrderId"),
-                status = rs.getString("status"),
-                created_at = rs.getLong("created_at"),
-                updated_at = rs.getLong("updated_at"),
-                dateOfChallan = rs.getLong("dateOfChallan"),
-                totalDeliveringQuantity = 0.0,
-                partyName = rs.getString("partyName")
-            )}, limit, offset)
-        } catch (ex: Exception) {
-            if (!isValidSortField(sortField) || !isValidSortOrder(sortOrder)) {
-                throw IllegalArgumentException("Invalid sort parameters")
-            }
-            throw ex
-        }
-    }
-
-    // Add validation helpers
-    private fun isValidSortField(field: String): Boolean {
-        val validFields = setOf("created_at", "updated_at", "dateOfChallan", "status")
-        return validFields.contains(field)
-    }
-
-    private fun isValidSortOrder(order: String): Boolean {
-        return order.uppercase() in setOf("ASC", "DESC")
-    }
 
 }

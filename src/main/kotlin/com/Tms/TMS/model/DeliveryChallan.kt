@@ -6,21 +6,22 @@ import java.util.*
 data class DeliveryChallan (
     val id: String? = UUID.randomUUID().toString(),
     val deliveryOrderId: String?,
-    val dateOfChallan: Long? = null,
     val status: String?,
-    val partyName: String? = null,
-    val totalDeliveringQuantity: Double = 0.0,
     val created_at: Long?,
     val updated_at: Long?,
+
+    val dateOfChallan: Long?,
+    val totalDeliveringQuantity: Double = 0.0,
+    val partyName: String?,
     val deliveryChallanItems: List<DeliveryChallanItems> = emptyList()
 )
 
 data class DeliveryChallanItems (
     val id: String? = UUID.randomUUID().toString(),
     val deliveryChallanId: String?,
-    val deliveryorderItemId: String?,
-    val district: String?,
-    val taluka: String?,
+    val deliveryOrderItemId: String?,
+    val district: String,
+    val taluka: String,
     val locationName: String?,
     val materialName: String?,
     val quantity: Double = 0.0,
