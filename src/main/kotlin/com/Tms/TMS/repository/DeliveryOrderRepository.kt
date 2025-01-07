@@ -119,7 +119,6 @@ class DeliveryOrderRepository(private val jdbcTemplate: JdbcTemplate) {
                     district = actualDistrict,
                     totalQuantity = items.sumOf { it.quantity },
                     totalPendingQuantity = items.sumOf { it.pendingQuantity ?: 0 },
-                    totalInProgressQuantity = items.sumOf { it.inProgressQuantity ?: 0 },
                     totalDeliveredQuantity = items.sumOf { it.deliveredQuantity ?: 0 },
                     status = items.firstOrNull()?.status ?: "",
                     deliveryOrderItems = items
@@ -129,7 +128,6 @@ class DeliveryOrderRepository(private val jdbcTemplate: JdbcTemplate) {
             // Calculate grand totals
             val grandTotalQuantity = deliveryOrderItems.sumOf { it.quantity }
             val grandTotalPendingQuantity = deliveryOrderItems.sumOf { it.pendingQuantity ?: 0 }
-            val grandTotalInProgressQuantity = deliveryOrderItems.sumOf { it.inProgressQuantity ?: 0 }
             val grandTotalDeliveredQuantity = deliveryOrderItems.sumOf { it.deliveredQuantity ?: 0 }
 
             // Return the complete deliveryorder with sections and totals
@@ -137,7 +135,6 @@ class DeliveryOrderRepository(private val jdbcTemplate: JdbcTemplate) {
                 deliveryOrderSections = sections,
                 grandTotalQuantity = grandTotalQuantity,
                 grandTotalPendingQuantity = grandTotalPendingQuantity,
-                grandTotalInProgressQuantity = grandTotalInProgressQuantity,
                 grandTotalDeliveredQuantity = grandTotalDeliveredQuantity
             )
         } catch (ex: Exception) {
@@ -218,8 +215,7 @@ class DeliveryOrderRepository(private val jdbcTemplate: JdbcTemplate) {
             status = rs.getString("status"),
             rate = rs.getDouble("rate"),
             dueDate = rs.getLong("duedate"),
-            deliveredQuantity = 0.0,
-            inProgressQuantity = 0.0
+            deliveredQuantity = 0.0
         )
     }
 
@@ -296,6 +292,5 @@ class DeliveryOrderRepository(private val jdbcTemplate: JdbcTemplate) {
 
 
         item.deliveredQuantity = totalDeliveredQuantity
-        item.inProgressQuantity = totalInProgressQuantity
     }
 }

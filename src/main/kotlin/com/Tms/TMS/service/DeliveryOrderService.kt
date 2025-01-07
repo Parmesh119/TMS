@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class DeliveryOrderService(private val deliveryOrderRepository: DeliveryOrderRepository,
-    private val deliveryOrderItemRepository: DeliveryOrderItemRepository
+                           private val deliveryOrderItemRepository: DeliveryOrderItemRepository
 ) {
     // Delivery Order Service operations
 

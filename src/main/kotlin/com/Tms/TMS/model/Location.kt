@@ -16,4 +16,15 @@ data class Location (
     val taluka: String,
     val city: String?,
     val pincode: String?,
+    val status: String
+)
+
+data class LocationListRequest(
+    val search: String,
+    val districts: List<String> = emptyList(),
+    val talukas: List<String> = emptyList(),
+    val statuses: List<String> = emptyList(),
+    val getAll: Boolean,
+    val page: Int,
+    val size: Int
 )

@@ -1,0 +1,4 @@
+2025-01-06 16:36:46 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 16.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2025-01-06 16:38:17 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 16.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2025-01-06 16:39:05 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 16.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.
+2025-01-06 16:43:44 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: PostgreSQL 16.6 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.

@@ -14,7 +14,6 @@ data class deliveryorder (
     val grandTotalQuantity: Int? = 0,
     val grandTotalPendingQuantity: Int? = 0,
     val grandTotalDeliveredQuantity: Int? = 0,
-    val grandTotalInProgressQuantity: Int? = 0,
     val deliveryOrderSections: List<deliveryOrderSections>?,
 )
 
@@ -23,7 +22,6 @@ data class deliveryOrderSections (
     val totalQuantity: Int = 0,
     val totalPendingQuantity: Int = 0,
     val totalDeliveredQuantity: Int = 0,
-    val totalInProgressQuantity: Int = 0,
     val status: String,
     val deliveryOrderItems: List<deliveryOrderItems> = emptyList()
 )
@@ -38,7 +36,6 @@ data class deliveryOrderItems (
     val quantity: Int,
     val pendingQuantity: Int? = 0,
     val deliveredQuantity: Int? = 0,
-    val inProgressQuantity: Int? = 0,
     val status: String,
     val rate: Float?,
     val unit: String?,
@@ -55,6 +52,5 @@ data class DeliverOrderItemMetadata(
     val status: String,
     val rate: Double?,
     val dueDate: Long?,
-    var deliveredQuantity: Double = 0.0,
-    var inProgressQuantity: Double = 0.0
+    var deliveredQuantity: Double = 0.0
 )

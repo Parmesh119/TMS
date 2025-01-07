@@ -1,6 +1,9 @@
 package com.Tms.TMS.controller
 
+import com.Tms.TMS.model.Employee
 import com.Tms.TMS.model.Location
+import com.Tms.TMS.model.LocationListRequest
+import com.Tms.TMS.model.Party
 import com.Tms.TMS.service.LocationService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -14,8 +17,10 @@ class LocationController(private val locationService: LocationService) {
 
     // List all location
     @PostMapping("/list")
-    fun listLocations(): ResponseEntity<List<Location>> {
-        return ResponseEntity.ok(locationService.getLocation())
+    fun listLocations(
+        @RequestBody locationListRequest: LocationListRequest
+    ): ResponseEntity<List<Location>> {
+        return ResponseEntity.ok(locationService.getLocation(locationListRequest.search, locationListRequest.districts, locationListRequest.talukas, locationListRequest.statuses, locationListRequest.getAll, locationListRequest.page, locationListRequest.size))
     }
 
     //    Get location by id
@@ -50,4 +55,13 @@ class LocationController(private val locationService: LocationService) {
         return locationService.deleteLocation(id)
     }
 
+    @GetMapping("/deactivate/{id}")
+    fun deactivateEmployee(@PathVariable id: String): ResponseEntity<Location> {
+        return ResponseEntity.ok(locationService.deactivateLocation(id))
+    }
+
+    @GetMapping("/activate/{id}")
+    fun activateEmployee(@PathVariable id: String): ResponseEntity<Location> {
+        return ResponseEntity.ok(locationService.activateLocation(id))
+    }
 }

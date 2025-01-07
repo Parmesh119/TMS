@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS location (
     taluka TEXT NOT NULL,
     city TEXT,
     pincode VARCHAR(255),
+    status TEXT NOT NULL DEFAULT 'active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -82,8 +83,9 @@ CREATE TABLE IF NOT EXISTS DeliveryOrderItem (
 
 CREATE TABLE IF NOT EXISTS deliveryChallan (
     id VARCHAR(255) PRIMARY KEY,
+    deliveryChallanNumber VARCHAR(255) NULL,
     deliveryOrderId VARCHAR(255) NOT NULL REFERENCES DeliveryOrder(id) ON DELETE CASCADE,
-    status VARCHAR(255),
+    status VARCHAR(255) DEFAULT 'delivered',
     created_at BIGINT,
     updated_at BIGINT,
     dateOfChallan BIGINT,

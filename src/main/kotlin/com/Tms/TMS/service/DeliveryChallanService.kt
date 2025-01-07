@@ -10,7 +10,7 @@ import java.util.UUID
 
 @Service
 class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChallanRepository,
-    private val deliveryOrderRepository: DeliveryOrderRepository) {
+                             private val deliveryOrderRepository: DeliveryOrderRepository) {
 
     fun createDeliveryChallan(do_id: String): DeliveryChallan {
         val deliveryOrder = deliveryOrderRepository.findById(do_id)

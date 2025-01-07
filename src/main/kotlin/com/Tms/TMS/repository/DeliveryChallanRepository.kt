@@ -298,7 +298,7 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
         return jdbcTemplate.update(sql, id)
     }
 
-//    fun updateItem(updateItem: DeliveryChallanItems): Int {
+    //    fun updateItem(updateItem: DeliveryChallanItems): Int {
 //        return try {
 //            if (updateItem.deliveryorderItemId == null) {
 //                throw Exception("deliveryorderItemId cannot be null for update operation")
