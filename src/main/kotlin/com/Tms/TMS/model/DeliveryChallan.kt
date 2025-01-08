@@ -12,7 +12,10 @@ data class DeliveryChallan (
     val dateOfChallan: Long?,
     val totalDeliveringQuantity: Double = 0.0,
     val partyName: String?,
-    val deliveryChallanItems: List<DeliveryChallanItems> = emptyList()
+    val deliveryChallanItems: List<DeliveryChallanItems> = emptyList(),
+    val transportationCompanyId: String?,
+    val vehicleId: String?,
+    val driverId: String?,
 )
 
 data class DeliveryChallanItems (

@@ -23,7 +23,10 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
             updated_at = rs.getLong("updated_at"),
             dateOfChallan = rs.getLong("dateOfChallan"),
             totalDeliveringQuantity = 0.0,
-            partyName = rs.getString("partyName")
+            partyName = rs.getString("partyName"),
+            transportationCompanyId = rs.getString("transportationCompanyId"),
+            vehicleId = rs.getString("vehicleId"),
+            driverId = rs.getString("driverId")
         )
     }
 
@@ -275,7 +278,10 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
                 updated_at = rs.getLong("updated_at"),
                 dateOfChallan = rs.getLong("dateOfChallan"),
                 totalDeliveringQuantity = 0.0,
-                partyName = rs.getString("partyName")
+                partyName = rs.getString("partyName"),
+                transportationCompanyId = rs.getString("transportationCompanyId"),
+                vehicleId = rs.getString("vehicleId"),
+                driverId = rs.getString("driverId")
             )}, limit, offset)
         } catch (ex: Exception) {
             if (!isValidSortField(sortField) || !isValidSortOrder(sortOrder)) {

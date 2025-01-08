@@ -273,6 +273,7 @@ class TransportationCompanyRepository(
                 UPDATE vehicles
                 SET
                     vehicle_number = ?,
+                    vehicle_type = ?,
                     rc_book_url = ?
                 WHERE id = ?
             """.trimIndent()
@@ -281,6 +282,7 @@ class TransportationCompanyRepository(
                 jdbcTemplate.update(
                     updateVehicleSql,
                     vehicle.vehicleNumber,
+                    vehicle.type,
                     vehicle.rcBookUrl,
                     vehicle.id
                 )

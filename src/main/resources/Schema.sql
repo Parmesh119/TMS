@@ -88,7 +88,10 @@ CREATE TABLE IF NOT EXISTS deliveryChallan (
     created_at BIGINT,
     updated_at BIGINT,
     dateOfChallan BIGINT,
-    totaldeliveringquantity DOUBLE PRECISION DEFAULT 0.0
+    totaldeliveringquantity DOUBLE PRECISION DEFAULT 0.0,
+    transportationCompanyId TEXT REFERENCES transportationcompany(id) ON DELETE RESTRICT,
+    vehicleId TEXT REFERENCES vehicles(id) ON DELETE RESTRICT,
+    driverId TEXT REFERENCES drivers(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS deliveryChallanItem (

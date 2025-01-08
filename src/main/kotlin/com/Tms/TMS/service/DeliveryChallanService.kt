@@ -27,7 +27,10 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
                 updated_at = Instant.now().epochSecond,
                 dateOfChallan = Instant.now().epochSecond,
                 totalDeliveringQuantity = 0.0,
-                partyName = deliveryOrder.partyName
+                partyName = deliveryOrder.partyName,
+                transportationCompanyId = "1",
+                vehicleId = "1",
+                driverId = "1"
             )
             return deliveryChallanRepository.create(deliveryChallan)
         } catch (ex: Exception) {
