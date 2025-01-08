@@ -98,3 +98,34 @@ CREATE TABLE IF NOT EXISTS deliveryChallanItem (
     deliveringQuantity DOUBLE PRECISION DEFAULT 0.0
 );
 
+CREATE TABLE IF NOT EXISTS transportationcompany (
+    id VARCHAR(255) PRIMARY KEY,
+    company_name TEXT NOT NULL,
+    point_of_contact TEXT,
+    contact_number TEXT,
+    email TEXT,
+    address_line_1 TEXT,
+    address_line_2 TEXT,
+    state TEXT,
+    city TEXT,
+    pin_code TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS vehicles (
+    id VARCHAR(255) PRIMARY KEY NOT NULL,
+    vehicle_number TEXT NOT NULL,
+    vehicle_type TEXT,
+    rc_book_url TEXT,
+    transportationCompanyId VARCHAR(255) NOT NULL REFERENCES transportationcompany(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS drivers (
+    id VARCHAR(255) PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    contact_number TEXT,
+    driving_license_url TEXT,
+    transportationCompanyId VARCHAR(255) NOT NULL REFERENCES transportationcompany(id) ON DELETE CASCADE
+);

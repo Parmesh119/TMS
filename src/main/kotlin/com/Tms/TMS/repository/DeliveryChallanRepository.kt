@@ -246,24 +246,6 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
         }
     }
 
-    fun findDeliveryOrderIdByChallanId(challanId: String): String? {
-        val sql = """
-        SELECT deliveryOrderId
-        FROM deliveryChallan
-        WHERE id = ?
-    """
-        return jdbcTemplate.queryForObject(sql, String::class.java, challanId)
-    }
-
-    fun findIdsByDeliveryOrderId(deliveryOrderId: String): List<String> {
-        val sql = """
-        SELECT id
-        FROM deliveryOrderItem
-        WHERE deliveryOrderId = ?
-    """
-        return jdbcTemplate.queryForList(sql, String::class.java, deliveryOrderId)
-    }
-
 
 
     fun deleteItem(id: String): Int {

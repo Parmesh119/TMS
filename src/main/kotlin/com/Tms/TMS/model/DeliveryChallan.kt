@@ -9,7 +9,6 @@ data class DeliveryChallan (
     val status: String?,
     val created_at: Long?,
     val updated_at: Long?,
-
     val dateOfChallan: Long?,
     val totalDeliveringQuantity: Double = 0.0,
     val partyName: String?,
