@@ -12,6 +12,12 @@ import java.util.UUID
 class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChallanRepository,
     private val deliveryOrderRepository: DeliveryOrderRepository) {
 
+    fun generateDeliveryChallanId(): String {
+        val rowCount = deliveryChallanRepository.getDeliveryChallanCount()
+        val nextId = rowCount?.plus(1)
+        return String.format("DC_%04d", nextId)
+    }
+
     fun createDeliveryChallan(do_id: String): DeliveryChallan {
         val deliveryOrder = deliveryOrderRepository.findById(do_id)
 
@@ -20,7 +26,7 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
         }
         return try {
             val deliveryChallan = DeliveryChallan(
-                id = UUID.randomUUID().toString(),
+                id = generateDeliveryChallanId(),
                 deliveryOrderId = do_id,
                 status = "in-progress",
                 created_at = Instant.now().epochSecond,
@@ -29,6 +35,7 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
                 totalDeliveringQuantity = 0.0,
                 partyName = deliveryOrder.partyName,
                 transportationCompanyId = null,
+                transportationCompanyName = null,
                 vehicleId = null,
                 driverId = null
             )
@@ -84,9 +91,8 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
 
 
 
-    fun listDeliveryChallans(page: Int, size: Int, sortField: String, sortOrder: String, deliveryOrderIds: List<String> = emptyList()): List<DeliveryChallan> {
-        val offset = (page - 1) * size
-        val results = deliveryChallanRepository.findAll(size, offset, sortField, sortOrder, deliveryOrderIds)
+    fun listDeliveryChallans(search: String? =null, page: Int, size: Int, deliveryOrderIds: List<String>? = emptyList(), fromDate: Long?, toDate: Long?, status: List<String>? = emptyList(), partyIds: List<String>? = emptyList(), transportationCompanyIds: List<String>? = emptyList(), getAll: Boolean,  sortField: String, sortOrder: String): List<DeliveryChallan> {
+        val results = deliveryChallanRepository.findAll(search, page, size, deliveryOrderIds, fromDate, toDate, status, partyIds, transportationCompanyIds, getAll, sortField, sortOrder)
         return results
     }
 

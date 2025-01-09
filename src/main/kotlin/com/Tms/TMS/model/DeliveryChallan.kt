@@ -4,7 +4,7 @@ import java.time.LocalDateTime
 import java.util.*
 
 data class DeliveryChallan (
-    val id: String? = UUID.randomUUID().toString(),
+    val id: String,
     val deliveryOrderId: String?,
     val status: String?,
     val created_at: Long?,
@@ -14,6 +14,7 @@ data class DeliveryChallan (
     val partyName: String?,
     val deliveryChallanItems: List<DeliveryChallanItems> = emptyList(),
     val transportationCompanyId: String?,
+    val transportationCompanyName: String? = null,
     val vehicleId: String?,
     val driverId: String?,
 )
@@ -33,9 +34,14 @@ data class DeliveryChallanItems (
 )
 
 data class DeliveryChallanListRequest(
+    val search: String? = null,
     val page: Int?,
     val size: Int?,
-    val sortField: String?,
-    val sortOrder: String?,
     val deliveryOrderIds: List<String> = emptyList(),
+    val fromDate: Long? = null,
+    val toDate: Long? = null,
+    val statuses: List<String> = emptyList(),
+    val partyIds: List<String> = emptyList(),
+    val transportationCompanyIds: List<String> = emptyList(),
+    val getAll: Boolean = false,
 )

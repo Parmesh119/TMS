@@ -27,7 +27,6 @@ class DeliveryChallanController(private val deliveryChallanService: DeliveryChal
 
     @PostMapping("/update")
     fun updateDeliveryChallan(@RequestBody deliveryChallan: DeliveryChallan): ResponseEntity<DeliveryChallan> {
-        // Implement logic to update an existing delivery challan
         return ResponseEntity.ok(deliveryChallanService.updateDeliveryChallan(deliveryChallan))
     }
 
@@ -37,11 +36,18 @@ class DeliveryChallanController(private val deliveryChallanService: DeliveryChal
     ): ResponseEntity<List<DeliveryChallan>> {
         return ResponseEntity.ok(
             deliveryChallanService.listDeliveryChallans(
+                request.search,
                 request.page ?: 1,
                 request.size ?: 10,
-                request.sortField ?: "created_at",
-                request.sortOrder ?: "desc",
-                request.deliveryOrderIds
+                request.deliveryOrderIds,
+                request.fromDate,
+                request.toDate,
+                request.statuses,
+                request.partyIds,
+                request.transportationCompanyIds,
+                request.getAll,
+                "created_at",
+                "desc",
             )
         )
     }

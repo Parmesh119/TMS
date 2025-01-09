@@ -8,9 +8,14 @@ import com.Tms.TMS.repository.DeliveryOrderItemRepository
 import com.Tms.TMS.repository.DeliveryOrderRepository
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Service
-class DeliveryOrderService(private val deliveryOrderRepository: DeliveryOrderRepository,
+class DeliveryOrderService(
+    private val deliveryOrderRepository: DeliveryOrderRepository,
     private val deliveryOrderItemRepository: DeliveryOrderItemRepository
 ) {
     // Delivery Order Service operations
@@ -45,22 +50,23 @@ class DeliveryOrderService(private val deliveryOrderRepository: DeliveryOrderRep
     }
 
     // create delivery order
-    fun createDeliveryOrder(orderRequest: deliveryorder, deliveryOrderSections: List<deliveryOrderSections>): ResponseEntity<deliveryorder> {
-        // Implement logic to create a new delivery order
-        deliveryOrderRepository.create(orderRequest)
+    fun createDeliveryOrder(orderRequest: deliveryorder, deliveryOrderSections: List<deliveryOrderSections>): deliveryorder {
+        val nextDoNumber = generateNextDoNumber()
+        val deliveryOrderWithDoNumber = orderRequest.copy(id = nextDoNumber)
+
+        val createdOrder = deliveryOrderRepository.create(deliveryOrderWithDoNumber)
         val itemsToSave = deliveryOrderSections.flatMap { section ->
             section.deliveryOrderItems?.map { item ->
-                item.copy(deliveryOrderId = orderRequest.id)
+                item.copy(deliveryOrderId = nextDoNumber)
             } ?: emptyList()
         }
-        deliveryOrderItemRepository.saveAll(orderRequest.id!!, itemsToSave)
-        return ResponseEntity.ok(orderRequest)
+        deliveryOrderItemRepository.saveAll(nextDoNumber, itemsToSave)
+        return createdOrder
     }
 
     // update delivery order
     fun updateDeliveryOrder(orderRequest: deliveryorder, sections: List<deliveryOrderSections>): deliveryorder {
-        // Implement logic to update an existing delivery order
-        deliveryOrderRepository.update(orderRequest)
+        val updatedOrder = deliveryOrderRepository.update(orderRequest)
         val itemsToSave = sections.flatMap { section ->
             section.deliveryOrderItems?.map { item ->
                 item.copy(deliveryOrderId = orderRequest.id) // Associate with the deliveryOrderId
@@ -68,16 +74,104 @@ class DeliveryOrderService(private val deliveryOrderRepository: DeliveryOrderRep
         }
 
         deliveryOrderItemRepository.syncItems(itemsToSave, orderRequest.id!!)
-        return orderRequest;
+        return updatedOrder
     }
 
-    // delete delivery order
+
     fun deleteOrder(id: String): Int {
-        // Implement logic to delete an existing delivery order
         return deliveryOrderRepository.deleteById(id)
     }
 
     fun listDeliveryOrderItemsForDeliveryOrderId(deliveryOrderId: String): List<DeliverOrderItemMetadata> {
         return deliveryOrderRepository.listDeliverOrderItemMetadata(deliveryOrderId)
+    }
+
+    fun generateNextDoNumber(): String {
+        val lastDoNumber = deliveryOrderRepository.getLastDoNumber()
+        val nextNumber = if (lastDoNumber == null) {
+            1
+        } else {
+            val lastNumber = lastDoNumber.substring(3).toIntOrNull() ?: 0
+            lastNumber + 1
+        }
+        return "DO_" + String.format("%04d", nextNumber)
+    }
+
+    fun generateCsvFile(doNumber: String): ByteArray {
+        val deliveryOrderData = deliveryOrderRepository.getDeliveryOrderWithDetails(doNumber)
+            ?: throw RuntimeException("Delivery order not found")
+
+        val csvBuilder = StringBuilder()
+
+        // Header section
+        csvBuilder.appendLine("DO Number,${deliveryOrderData.do_number}")
+        csvBuilder.appendLine("Total Quantity,${deliveryOrderData.totalQuantity}")
+        csvBuilder.appendLine("Total Delivered,${deliveryOrderData.totalDelivered}")
+        csvBuilder.appendLine("Client Contact Number,${deliveryOrderData.clientContactNumber}")
+        csvBuilder.appendLine("Party,${deliveryOrderData.partyName}")
+        csvBuilder.appendLine("Date Of Contract,${formatDate(deliveryOrderData.dateOfContract)}")
+        csvBuilder.appendLine()
+
+        // Delivery Order Items section
+        csvBuilder.appendLine("Delivery Order Items")
+        csvBuilder.appendLine("Sr No,Taluka,Location,Material,Quantity,Delivered Quantity,Rate,Due Date,Status")
+
+        var srNo = 1
+        var currentDistrict: String? = null
+        var districtQuantity = 0
+        var districtDeliveredQuantity = 0
+
+        deliveryOrderData.items.forEach { item ->
+            if (currentDistrict != item.district) {
+                if (currentDistrict != null) {
+                    // Print district total
+                    csvBuilder.appendLine("Total For District: $currentDistrict,$districtQuantity,$districtDeliveredQuantity")
+                    csvBuilder.appendLine()
+                }
+                currentDistrict = item.district
+                districtQuantity = 0
+                districtDeliveredQuantity = 0
+                srNo = 1
+            }
+
+            csvBuilder.appendLine(
+                "${srNo},${item.taluka},${item.locationName},${item.materialName}," +
+                        "${item.quantity},${item.deliveredQuantity},${item.rate}," +
+                        "${formatDate(item.dueDate)},${item.status}"
+            )
+            districtQuantity += item.quantity
+            districtDeliveredQuantity += item.deliveredQuantity
+            srNo++
+        }
+
+        // Print last district total
+        currentDistrict?.let {
+            csvBuilder.appendLine("Total For District: $it,$districtQuantity,$districtDeliveredQuantity")
+            csvBuilder.appendLine()
+        }
+
+        // Delivery Challan section
+        csvBuilder.appendLine("Delivery Challan")
+        csvBuilder.appendLine("Sr No,Id,Date,Quantity")
+        deliveryOrderData.challans.forEachIndexed { index, challan ->
+            csvBuilder.appendLine(
+                "${index + 1},${challan.dc_number},${formatDate(challan.dateOfChallan)}," +
+                        "${challan.quantity}"
+            )
+        }
+
+        return csvBuilder.toString().toByteArray(Charsets.UTF_8)
+    }
+
+    private fun formatDate(timestamp: Long?): String {
+        if (timestamp == null) return ""
+
+        return try {
+            val instant = Instant.ofEpochMilli(timestamp)
+            val date = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+            date.format(DateTimeFormatter.ofPattern("dd/MMM/yyyy"))
+        } catch (e: Exception) {
+            ""
+        }
     }
 }

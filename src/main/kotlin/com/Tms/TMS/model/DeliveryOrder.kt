@@ -4,7 +4,7 @@ import java.time.LocalDateTime
 import java.util.*
 
 data class deliveryorder (
-    val id: String? = UUID.randomUUID().toString(),
+    val id: String? , // will contain do_number
     val contractId: String?,
     val partyId: String?,
     val partyName: String?,
@@ -40,10 +40,11 @@ data class deliveryOrderItems (
     val rate: Float?,
     val unit: String?,
     val dueDate: Long?,
+    val associatedDeliveryChallanItems: List<AssociatedDeliverChallanItemMetadata> = emptyList()
 )
 
 data class DeliverOrderItemMetadata(
-    val id: String = UUID.randomUUID().toString(),
+    val id: String,
     val district: String,
     val taluka: String,
     val locationName: String,
@@ -70,4 +71,39 @@ data class ListDeliveryOrderItem(
     val partyName: String?,
     val status: String?,
     val dateOfContract: Long?
+)
+
+data class DeliveryOrderExportData(
+    val do_number: String,
+    val totalQuantity: Int,
+    val totalDelivered: Int,
+    val clientContactNumber: String?,
+    val partyName: String?,
+    val dateOfContract: Long?,  // Updated to be nullable
+    val items: List<DeliveryOrderItemExportData>,
+    val challans: List<DeliveryChallanExportData>
+)
+
+data class DeliveryOrderItemExportData(
+    val district: String,
+    val taluka: String,
+    val locationName: String?,
+    val materialName: String?,
+    val quantity: Int,
+    val deliveredQuantity: Int,
+    val rate: Double,
+    val dueDate: Long?,  // Updated to be nullable
+    val status: String
+)
+
+data class DeliveryChallanExportData(
+    val dc_number: String,
+    val dateOfChallan: Long?,  // Updated to be nullable
+    val quantity: Double
+)
+
+data class AssociatedDeliverChallanItemMetadata(
+    val id: String,
+    val deliveringQuantity: Double = 0.0,
+    val deliveryChallanId: String
 )

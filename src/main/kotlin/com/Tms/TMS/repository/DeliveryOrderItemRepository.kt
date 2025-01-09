@@ -12,7 +12,7 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
     private val rowMapper = RowMapper { rs: ResultSet, _: Int ->
         deliveryOrderItems(
             id = rs.getString("id"),
-            deliveryOrderId = rs.getString("deliveryOrderId"),
+            deliveryOrderId = rs.getString("do_number"),
             district = rs.getString("district"),
             taluka = rs.getString("taluka"),
             locationId = rs.getString("locationId"),
@@ -27,11 +27,10 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
 
 
     // Implement Delivery Order Item Repository operations
-    fun saveAll(orderId: String, items: List<deliveryOrderItems>) {
-        // Implement logic to save all delivery order items
+    fun saveAll(doNumber: String, items: List<deliveryOrderItems>) {
         val sql = """
             INSERT INTO deliveryorderitem (
-                id, deliveryOrderId, district, taluka, locationId, materialId, quantity,
+                id, do_number, district, taluka, locationId, materialId, quantity,
                rate, unit, dueDate, status
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
@@ -57,8 +56,8 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
             throw e
         }
     }
-    fun syncItems(items: List<deliveryOrderItems>, deliveryOrderId: String) {
-        val existingItems = getExistingItems(deliveryOrderId)
+    fun syncItems(items: List<deliveryOrderItems>, doNumber: String) {
+        val existingItems = getExistingItems(doNumber)
 
         val itemsToUpdate = mutableListOf<deliveryOrderItems>()
         val itemsToDelete = mutableListOf<deliveryOrderItems>()
@@ -79,7 +78,7 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
                 )
                 itemsToUpdate.add(mergedItem)
             } else {
-                itemsToInsert.add(item.copy(deliveryOrderId = deliveryOrderId))
+                itemsToInsert.add(item.copy(deliveryOrderId = doNumber))
             }
         }
 
@@ -93,9 +92,9 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
         deleteItems(itemsToDelete)
     }
 
-    fun getExistingItems(deliveryOrderId: String): List<deliveryOrderItems> {
-        val sql = "SELECT * FROM DeliveryOrderItem WHERE deliveryOrderId = ?"
-        return jdbcTemplate.query(sql, rowMapper, deliveryOrderId)
+    fun getExistingItems(doNumber: String): List<deliveryOrderItems> {
+        val sql = "SELECT * FROM DeliveryOrderItem WHERE do_number = ?"
+        return jdbcTemplate.query(sql, rowMapper, doNumber)
     }
 
     private fun updateItems(items: List<deliveryOrderItems>) {
@@ -112,7 +111,7 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
             unit = ?, 
             dueDate = ?, 
             status = ?
-        WHERE id = ? AND deliveryOrderId = ?
+        WHERE id = ? AND do_number = ?
     """
 
         try {
@@ -139,7 +138,7 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
 
     fun deleteItems(items: List<deliveryOrderItems>) {
         if (items.isEmpty()) return
-        val sql = "DELETE FROM DeliveryOrderItem WHERE id = ? AND deliveryOrderId = ?"
+        val sql = "DELETE FROM DeliveryOrderItem WHERE id = ? AND do_number = ?"
         try {
             items.forEach { item ->
                 jdbcTemplate.update(sql, item.id, item.deliveryOrderId)
@@ -153,7 +152,7 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
         if (items.isEmpty()) return
         val sql = """
             INSERT INTO deliveryorderitem (
-                id, deliveryOrderId, district, taluka, locationId, materialId, quantity,
+                id, do_number, district, taluka, locationId, materialId, quantity,
                rate, unit, dueDate, status
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """

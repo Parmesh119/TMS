@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS Users (
 );
 
 CREATE TABLE IF NOT EXISTS DeliveryOrder (
-    id VARCHAR(255) PRIMARY KEY,
+    do_number VARCHAR(255) PRIMARY KEY, -- Changed from 'id' to 'do_number'
     contractId TEXT,
     partyId TEXT,
     dateOfContract BIGINT,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS DeliveryOrder (
 
 CREATE TABLE IF NOT EXISTS DeliveryOrderItem (
     id VARCHAR(255)  PRIMARY KEY,
-    deliveryOrderId VARCHAR(255)  NOT NULL,
+    do_number VARCHAR(255)  NOT NULL, -- Changed from 'deliveryOrderId' to 'do_number'
     district TEXT,
     taluka TEXT,
     locationId TEXT,
@@ -78,12 +78,12 @@ CREATE TABLE IF NOT EXISTS DeliveryOrderItem (
     rate INT,
     unit TEXT,
     dueDate BIGINT,
-    FOREIGN KEY (deliveryOrderId) REFERENCES DeliveryOrder(id)
+    FOREIGN KEY (do_number) REFERENCES DeliveryOrder(do_number) -- Foreign key updated to reference do_number
 );
 
 CREATE TABLE IF NOT EXISTS deliveryChallan (
-    id VARCHAR(255) PRIMARY KEY,
-    deliveryOrderId VARCHAR(255) NOT NULL REFERENCES DeliveryOrder(id) ON DELETE CASCADE,
+    dc_number VARCHAR(255) PRIMARY KEY,
+    do_number VARCHAR(255) NOT NULL REFERENCES DeliveryOrder(do_number) ON DELETE CASCADE,
     status VARCHAR(255),
     created_at BIGINT,
     updated_at BIGINT,
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS deliveryChallan (
 
 CREATE TABLE IF NOT EXISTS deliveryChallanItem (
     id VARCHAR(255) PRIMARY KEY,
-    deliveryChallanId VARCHAR(255) REFERENCES deliveryChallan(id) ON DELETE CASCADE,
+    dc_number VARCHAR(255) REFERENCES deliveryChallan(dc_number) ON DELETE CASCADE,
     deliveryOrderItemId VARCHAR(255) REFERENCES deliveryorderitem(id) ON DELETE CASCADE,
     deliveringQuantity DOUBLE PRECISION DEFAULT 0.0
 );

@@ -5,6 +5,7 @@ import com.Tms.TMS.model.ListDeliveryOrderItem
 import com.Tms.TMS.model.deliveryOrderInput
 import com.Tms.TMS.model.deliveryorder
 import com.Tms.TMS.service.DeliveryOrderService
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -52,11 +53,10 @@ class DeliveryOrderController(private val deliveryOrderService: DeliveryOrderSer
     // create delivery order
     @PostMapping("/create")
     fun createDeliveryOrder(@RequestBody orderRequest: deliveryorder): ResponseEntity<deliveryorder> {
-        // Implement logic to create a new delivery order
-        val deliveryOrderSections = orderRequest.deliveryOrderSections ?: emptyList();
-        println(deliveryOrderSections)
+        val deliveryOrderSections = orderRequest.deliveryOrderSections ?: emptyList()
         return try {
-            ResponseEntity.ok(deliveryOrderService.createDeliveryOrder(orderRequest, deliveryOrderSections).body)
+            val createdOrder = deliveryOrderService.createDeliveryOrder(orderRequest, deliveryOrderSections)
+            ResponseEntity.ok(createdOrder)
         } catch (ex: Exception) {
             throw ex
         }
@@ -98,5 +98,15 @@ class DeliveryOrderController(private val deliveryOrderService: DeliveryOrderSer
     @GetMapping("/list/delivery-order-items/{deliveryOrderId}")
     fun listDeliveryOrderItems(@PathVariable deliveryOrderId: String): ResponseEntity<List<DeliverOrderItemMetadata>> {
         return ResponseEntity.ok(deliveryOrderService.listDeliveryOrderItemsForDeliveryOrderId(deliveryOrderId))
+    }
+
+    @GetMapping("/download-csv/{do_number}")
+    fun exportDeliveryOrder(@PathVariable do_number: String): ResponseEntity<ByteArray> {
+        val csvData = deliveryOrderService.generateCsvFile(do_number)
+
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=delivery_order_$do_number.csv")
+            .header(HttpHeaders.CONTENT_TYPE, "text/csv")
+            .body(csvData)
     }
 }
