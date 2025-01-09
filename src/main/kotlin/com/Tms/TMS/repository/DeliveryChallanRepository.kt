@@ -61,7 +61,10 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
             dateofchallan = ?,
             status = ?,
             totaldeliveringquantity = ?,
-            updated_at = ?
+            updated_at = ?,
+            transportationcompanyid = ?,   
+            vehicleid = ?,                  
+            driverid = ?              
         WHERE id = ?
         """
 
@@ -73,6 +76,9 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
                 deliveryChallan.status,
                 deliveryChallan.totalDeliveringQuantity,
                 currentTime,
+                deliveryChallan.transportationCompanyId,  // Handling transportationCompanyId
+                deliveryChallan.vehicleId,                 // Handling vehicleId
+                deliveryChallan.driverId,                  // Handling driverId
                 deliveryChallan.id
             )
 
@@ -96,11 +102,11 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
 
             // Update existing items
             val updateItemSql = """
-            UPDATE deliverychallanitem
-            SET
-                deliveringquantity = ?,
-                deliveryorderitemid = ?
-            WHERE id = ?
+        UPDATE deliverychallanitem
+        SET
+            deliveringquantity = ?,
+            deliveryorderitemid = ?
+        WHERE id = ?
         """
 
             itemsToUpdate.forEach { item ->
@@ -114,12 +120,12 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
 
             // Create new items
             val createItemSql = """
-            INSERT INTO deliverychallanitem (
-                id,
-                deliverychallanid,
-                deliveryorderitemid,
-                deliveringquantity
-            ) VALUES (?, ?, ?, ?)
+        INSERT INTO deliverychallanitem (
+            id,
+            deliverychallanid,
+            deliveryorderitemid,
+            deliveringquantity
+        ) VALUES (?, ?, ?, ?)
         """
 
             itemsToCreate.forEach { item ->
@@ -131,37 +137,14 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
                     item.deliveringQuantity
                 )
             }
+
+            // Return the updated DeliveryChallan
             return findById(deliveryChallan.id) ?: throw Exception("Failed to retrieve updated delivery challan")
         } catch (e: Exception) {
             throw e
         }
     }
 
-    fun createItem(item: DeliveryChallanItems): DeliveryChallanItems {
-        try {
-            val sql = """
-            INSERT INTO deliverychallanitem(
-                id, 
-                deliverychallanid, 
-                deliveryorderitemid, 
-                deliveringquantity
-            )
-            VALUES (?, ?, ?, ?)
-        """.trimIndent()
-
-            jdbcTemplate.update(
-                sql,
-                item.id ?: UUID.randomUUID().toString(),
-                item.deliveryChallanId,
-                item.deliveryOrderItemId,  // Ensure this is included
-                item.deliveringQuantity
-            )
-
-            return item
-        } catch (ex: Exception) {
-            throw Exception("Failed to create delivery challan item: ${ex.message}")
-        }
-    }
 
     fun findById(id: String): DeliveryChallan? {
         return try {
@@ -257,39 +240,62 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
     }
 
 
-    fun findAll(limit: Int, offset: Int, sortField: String, sortOrder: String): List<DeliveryChallan> {
+    fun findAll(
+        limit: Int,
+        offset: Int,
+        sortField: String,
+        sortOrder: String,
+        deliveryOrderIds: List<String>? = null
+    ): List<DeliveryChallan> {
         return try {
+            // Start building the SQL query
             val sql = """
             SELECT 
-                dc.*,
+                dc.*, 
                 pl.name AS partyName
             FROM deliverychallan AS dc
             LEFT JOIN deliveryorder AS dord ON dc.deliveryOrderId = dord.id
             LEFT JOIN party_location AS pl ON dord.partyId = pl.id
-            ORDER BY dc.${sortField} ${sortOrder}
-            LIMIT ? OFFSET ?
         """.trimIndent()
 
-            jdbcTemplate.query(sql, { rs, _ -> DeliveryChallan(
-                id = rs.getString("id"),
-                deliveryOrderId = rs.getString("deliveryOrderId"),
-                status = rs.getString("status"),
-                created_at = rs.getLong("created_at"),
-                updated_at = rs.getLong("updated_at"),
-                dateOfChallan = rs.getLong("dateOfChallan"),
-                totalDeliveringQuantity = 0.0,
-                partyName = rs.getString("partyName"),
-                transportationCompanyId = rs.getString("transportationCompanyId"),
-                vehicleId = rs.getString("vehicleId"),
-                driverId = rs.getString("driverId")
-            )}, limit, offset)
+            // Add filtering condition for deliveryOrderIds
+            val whereClause = if (deliveryOrderIds.isNullOrEmpty()) {
+                ""
+            } else {
+                " WHERE dc.deliveryOrderId IN (${deliveryOrderIds.joinToString { "'$it'" }})"
+            }
+
+            // Append the WHERE clause to the SQL
+            val finalSql = sql + whereClause + """
+            ORDER BY dc.$sortField $sortOrder
+            LIMIT ? OFFSET ?
+        """
+
+            // Query the database
+            jdbcTemplate.query(finalSql, { rs, _ ->
+                DeliveryChallan(
+                    id = rs.getString("id"),
+                    deliveryOrderId = rs.getString("deliveryOrderId"),
+                    status = rs.getString("status"),
+                    created_at = rs.getLong("created_at"),
+                    updated_at = rs.getLong("updated_at"),
+                    dateOfChallan = rs.getLong("dateOfChallan"),
+                    totalDeliveringQuantity = 0.0,
+                    partyName = rs.getString("partyName"),
+                    transportationCompanyId = rs.getString("transportationCompanyId"),
+                    vehicleId = rs.getString("vehicleId"),
+                    driverId = rs.getString("driverId")
+                )
+            }, limit, offset)
         } catch (ex: Exception) {
+            // Validate sort parameters
             if (!isValidSortField(sortField) || !isValidSortOrder(sortOrder)) {
                 throw IllegalArgumentException("Invalid sort parameters")
             }
             throw ex
         }
     }
+
 
     // Add validation helpers
     private fun isValidSortField(field: String): Boolean {
@@ -376,5 +382,29 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
 //            throw ex
 //        }
 //    }
-
+//    fun createItem(item: DeliveryChallanItems): DeliveryChallanItems {
+//        try {
+//            val sql = """
+//            INSERT INTO deliverychallanitem(
+//                id,
+//                deliverychallanid,
+//                deliveryorderitemid,
+//                deliveringquantity
+//            )
+//            VALUES (?, ?, ?, ?)
+//        """.trimIndent()
+//
+//            jdbcTemplate.update(
+//                sql,
+//                item.id ?: UUID.randomUUID().toString(),
+//                item.deliveryChallanId,
+//                item.deliveryOrderItemId,  // Ensure this is included
+//                item.deliveringQuantity
+//            )
+//
+//            return item
+//        } catch (ex: Exception) {
+//            throw Exception("Failed to create delivery challan item: ${ex.message}")
+//        }
+//    }
 }

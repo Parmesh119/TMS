@@ -36,5 +36,6 @@ data class DeliveryChallanListRequest(
     val page: Int?,
     val size: Int?,
     val sortField: String?,
-    val sortOrder: String?
+    val sortOrder: String?,
+    val deliveryOrderIds: List<String> = emptyList(),
 )

@@ -28,9 +28,9 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
                 dateOfChallan = Instant.now().epochSecond,
                 totalDeliveringQuantity = 0.0,
                 partyName = deliveryOrder.partyName,
-                transportationCompanyId = "1",
-                vehicleId = "1",
-                driverId = "1"
+                transportationCompanyId = null,
+                vehicleId = null,
+                driverId = null
             )
             return deliveryChallanRepository.create(deliveryChallan)
         } catch (ex: Exception) {
@@ -48,31 +48,34 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
             if (deliveryChallan.id == null) {
                 throw Exception("Delivery Challan ID is required")
             }
+
             val existingDeliveryChallan = deliveryChallanRepository.findById(deliveryChallan.id)
-            if(existingDeliveryChallan == null) {
+            if (existingDeliveryChallan == null) {
                 throw Exception("Delivery Challan not found")
             }
 
             val updatedChallan = existingDeliveryChallan.copy(
                 deliveryChallanItems = deliveryChallan.deliveryChallanItems.map { item ->
                     if (item.id == null) {
-                        // For new items, preserve deliveryorderItemId while generating new id
                         item.copy(
                             id = UUID.randomUUID().toString(),
-                            deliveryChallanId = deliveryChallan.id,
-
+                            deliveryChallanId = deliveryChallan.id
                         )
                     } else {
-                        // For existing items, preserve all fields including deliveryorderItemId
                         item
                     }
                 },
                 status = deliveryChallan.status,
                 partyName = deliveryChallan.partyName,
                 totalDeliveringQuantity = deliveryChallan.totalDeliveringQuantity,
-                updated_at = Instant.now().epochSecond
+                updated_at = Instant.now().epochSecond,
+                transportationCompanyId = deliveryChallan.transportationCompanyId,
+                vehicleId = deliveryChallan.vehicleId,
+                driverId = deliveryChallan.driverId
             )
-            deliveryChallanRepository.update(updatedChallan)
+
+            // Update delivery challan using repository
+            return deliveryChallanRepository.update(updatedChallan)
         } catch (ex: Exception) {
             throw Exception(ex.message)
         }
@@ -80,11 +83,10 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
 
 
 
-    fun listDeliveryChallans(page: Int, size: Int, sortField: String, sortOrder: String): List<DeliveryChallan> {
+
+    fun listDeliveryChallans(page: Int, size: Int, sortField: String, sortOrder: String, deliveryOrderIds: List<String> = emptyList()): List<DeliveryChallan> {
         val offset = (page - 1) * size
-//        logger.info("Fetching records with page=$page, size=$size, offset=$offset")
-        val results = deliveryChallanRepository.findAll(size, offset, sortField, sortOrder)
-//        logger.info("Found ${results.size} records")
+        val results = deliveryChallanRepository.findAll(size, offset, sortField, sortOrder, deliveryOrderIds)
         return results
     }
 

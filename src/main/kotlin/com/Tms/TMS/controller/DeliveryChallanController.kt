@@ -40,7 +40,8 @@ class DeliveryChallanController(private val deliveryChallanService: DeliveryChal
                 request.page ?: 1,
                 request.size ?: 10,
                 request.sortField ?: "created_at",
-                request.sortOrder ?: "desc"
+                request.sortOrder ?: "desc",
+                request.deliveryOrderIds
             )
         )
     }
