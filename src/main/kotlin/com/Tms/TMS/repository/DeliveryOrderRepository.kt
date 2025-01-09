@@ -130,13 +130,13 @@ class DeliveryOrderRepository(
     fun findById(id: String): deliveryorder? {
         return try {
             val deliveryOrderSql = """
-            SELECT 
-                d.*,
-                p.name AS partyName
-            FROM deliveryorder d
-            LEFT JOIN party_location p ON d.partyId = p.id
-            WHERE d.do_number = ?
-        """
+                SELECT 
+                    d.*,
+                    p.name AS partyName
+                FROM deliveryorder d
+                LEFT JOIN party_location p ON d.partyId = p.id
+                WHERE d.do_number = ?
+            """
 
             val deliveryOrder = jdbcTemplate.queryForObject(deliveryOrderSql,
                 RowMapper { rs, _ ->
@@ -159,28 +159,50 @@ class DeliveryOrderRepository(
             val deliveryOrderItemsSql = "SELECT * FROM DeliveryOrderItem WHERE do_number = ?"
             val deliveryOrderItems = jdbcTemplate.query(deliveryOrderItemsSql, deliveryOrderItemRowMapper, id)
 
+            // Fetch Delivery Challan Items related to Delivery Order Items
+            val deliveryChallanItemsSql = """
+               SELECT dci.deliveryOrderItemId, dc.dc_number AS deliveryChallanId, dci.deliveringQuantity
+                FROM deliveryChallanItem dci
+                JOIN deliverychallan dc ON dci.dc_number = dc.dc_number
+                WHERE dc.do_number = ?
+            """
+            val deliveryChallanItems = jdbcTemplate.query(deliveryChallanItemsSql,
+                RowMapper{rs, _ ->
+                    AssociatedDeliverChallanItemMetadata(
+                        id = rs.getString("deliveryOrderItemId"),
+                        deliveringQuantity = rs.getDouble("deliveringQuantity"),
+                        deliveryChallanId = rs.getString("deliveryChallanId")
+                    )
+                }, id
+            )
 
-            val sections = deliveryOrderItems.groupBy { it.district ?: "null_district" }.map { (district, items) ->
+            // Group deliveryChallanItems by deliveryOrderItemId
+            val deliveryChallanItemsGroupedByOrderItem = deliveryChallanItems.groupBy { it.id }
+
+
+            val updatedDeliveryOrderItems = deliveryOrderItems.map { item ->
+                val associatedDCs = deliveryChallanItemsGroupedByOrderItem[item.id] ?: emptyList()
+                item.copy(associatedDeliveryChallanItems = associatedDCs)
+            }
+
+            val sections = updatedDeliveryOrderItems.groupBy { it.district ?: "null_district" }.map { (district, items) ->
                 val actualDistrict = if (district == "null_district") null else district
                 deliveryOrderSections(
                     district = actualDistrict,
                     totalQuantity = items.sumOf { it.quantity },
-                    totalPendingQuantity = items.sumOf { it.pendingQuantity ?: 0 },
-                    totalDeliveredQuantity = items.sumOf { it.deliveredQuantity ?: 0 },
+                    totalDeliveredQuantity = 0,
                     status = items.firstOrNull()?.status ?: "",
                     deliveryOrderItems = items
                 )
             }
 
-            val grandTotalQuantity = deliveryOrderItems.sumOf { it.quantity }
-            val grandTotalPendingQuantity = deliveryOrderItems.sumOf { it.pendingQuantity ?: 0 }
-            val grandTotalDeliveredQuantity = deliveryOrderItems.sumOf { it.deliveredQuantity ?: 0 }
+            val grandTotalQuantity = updatedDeliveryOrderItems.sumOf { it.quantity }
+            val grandTotalDeliveredQuantity = 0
 
 
             return deliveryOrder.copy(
                 deliveryOrderSections = sections,
                 grandTotalQuantity = grandTotalQuantity,
-                grandTotalPendingQuantity = grandTotalPendingQuantity,
                 grandTotalDeliveredQuantity = grandTotalDeliveredQuantity
             )
         } catch (ex: Exception) {
