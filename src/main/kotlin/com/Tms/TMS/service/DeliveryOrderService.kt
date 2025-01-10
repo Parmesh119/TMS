@@ -8,6 +8,7 @@ import com.Tms.TMS.repository.DeliveryOrderItemRepository
 import com.Tms.TMS.repository.DeliveryOrderRepository
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.io.File
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -160,7 +161,20 @@ class DeliveryOrderService(
             )
         }
 
-        return csvBuilder.toString().toByteArray(Charsets.UTF_8)
+        val csvData = csvBuilder.toString().toByteArray(Charsets.UTF_8)
+
+        // Create exports directory if it doesn't exist
+        val exportDir = File("exports")
+        if (!exportDir.exists()) {
+            exportDir.mkdir()
+        }
+
+        // Save the file in the exports directory
+        val fileName = "delivery_order_${doNumber}.csv"
+        val file = File(exportDir, fileName)
+        file.writeBytes(csvData)
+
+        return csvData
     }
 
     private fun formatDate(timestamp: Long?): String {

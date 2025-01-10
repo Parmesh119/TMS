@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.io.File
 
 @RestController
 @CrossOrigin
@@ -104,8 +105,13 @@ class DeliveryOrderController(private val deliveryOrderService: DeliveryOrderSer
     fun exportDeliveryOrder(@PathVariable do_number: String): ResponseEntity<ByteArray> {
         val csvData = deliveryOrderService.generateCsvFile(do_number)
 
+        // Save the file locally
+        val fileName = "delivery_order_${do_number}.csv"
+        val file = File(fileName)
+        file.writeBytes(csvData)
+
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=delivery_order_$do_number.csv")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=$fileName")
             .header(HttpHeaders.CONTENT_TYPE, "text/csv")
             .body(csvData)
     }
