@@ -6,7 +6,6 @@ import com.Tms.TMS.model.deliveryorder
 import com.Tms.TMS.model.deliveryOrderSections
 import com.Tms.TMS.repository.DeliveryOrderItemRepository
 import com.Tms.TMS.repository.DeliveryOrderRepository
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import java.io.File
 import java.time.Instant
@@ -31,7 +30,6 @@ class DeliveryOrderService(
         fromDate: Long?,
         toDate: Long?
     ): List<ListDeliveryOrderItem> {
-        val offset = (page - 1) * size
         return deliveryOrderRepository.findAll(
             search = search,
             page = page,
@@ -40,13 +38,18 @@ class DeliveryOrderService(
             partyId = partyId,
             fromDate = fromDate,
             toDate = toDate
-        )
+        ).map { item ->
+            val deliveryOrder = deliveryOrderRepository.findById(item.id)
+                ?: throw RuntimeException("Delivery order not found")
+            item.copy(
+                grandTotalDeliveredQuantity = deliveryOrder.grandTotalDeliveredQuantity,
+                grandTotalQuantity = deliveryOrder.grandTotalQuantity
+            )
+        }
     }
-
 
     // get by id
     fun getDeliveryOrderById(id: String): deliveryorder? {
-        // Implement logic to get delivery order by id
         return deliveryOrderRepository.findById(id)
     }
 
@@ -75,9 +78,15 @@ class DeliveryOrderService(
         }
 
         deliveryOrderItemRepository.syncItems(itemsToSave, orderRequest.id!!)
-        return updatedOrder
-    }
 
+        val updatedDeliveryOrder = deliveryOrderRepository.findById(orderRequest.id!!)
+            ?: throw RuntimeException("Delivery order not found")
+
+        return updatedDeliveryOrder.copy(
+            grandTotalQuantity = updatedDeliveryOrder.grandTotalQuantity,
+            grandTotalDeliveredQuantity = updatedDeliveryOrder.grandTotalDeliveredQuantity
+        )
+    }
 
     fun deleteOrder(id: String): Int {
         return deliveryOrderRepository.deleteById(id)
@@ -119,8 +128,8 @@ class DeliveryOrderService(
 
         var srNo = 1
         var currentDistrict: String? = null
-        var districtQuantity = 0
-        var districtDeliveredQuantity = 0
+        var districtQuantity: Double = 0.0
+        var districtDeliveredQuantity: Double = 0.0
 
         deliveryOrderData.items.forEach { item ->
             if (currentDistrict != item.district) {
@@ -130,8 +139,8 @@ class DeliveryOrderService(
                     csvBuilder.appendLine()
                 }
                 currentDistrict = item.district
-                districtQuantity = 0
-                districtDeliveredQuantity = 0
+                districtQuantity = item.quantity
+                districtDeliveredQuantity = item.deliveredQuantity
                 srNo = 1
             }
 

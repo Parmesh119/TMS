@@ -28,6 +28,7 @@ data class DeliveryChallanItems (
     val locationName: String?,
     val materialName: String?,
     val quantity: Double = 0.0,
+    val deliveredQuantity: Double = 0.0,
     val rate: Double = 0.0,
     val dueDate: Long?,
     val deliveringQuantity: Double = 0.0,
@@ -44,4 +45,15 @@ data class DeliveryChallanListRequest(
     val partyIds: List<String> = emptyList(),
     val transportationCompanyIds: List<String> = emptyList(),
     val getAll: Boolean = false,
+)
+
+data class DeliveryChallanOutputRecord(
+    val id: String,
+    val deliveryOrderId: String,
+    val dateOfChallan: Long?,
+    val status: String?,
+    val partyName: String?,
+    val transportationCompanyName: String?,
+    val driverName: String?,
+    val totalDeliveringQuantity: Double = 0.0,
 )

@@ -37,12 +37,11 @@ class DeliveryOrderRepository(
             taluka = rs.getString("taluka"),
             locationId = rs.getString("locationId"),
             materialId = rs.getString("materialId"),
-            quantity = rs.getInt("quantity"),
-            status = rs.getString("status"),
-            rate = rs.getFloat("rate"),
+            quantity = rs.getDouble("quantity"),
+            rate = rs.getDouble("rate"),
             unit = rs.getString("unit"),
             dueDate = rs.getLong("dueDate"),
-
+            deliveredQuantity = 0.0
         )
     }
 
@@ -190,14 +189,16 @@ class DeliveryOrderRepository(
                 deliveryOrderSections(
                     district = actualDistrict,
                     totalQuantity = items.sumOf { it.quantity },
-                    totalDeliveredQuantity = 0,
-                    status = items.firstOrNull()?.status ?: "",
+                    totalDeliveredQuantity = items.sumOf { it.deliveredQuantity },
+//                    status = items.firstOrNull()?.status ?: "",
                     deliveryOrderItems = items
                 )
             }
 
             val grandTotalQuantity = updatedDeliveryOrderItems.sumOf { it.quantity }
-            val grandTotalDeliveredQuantity = 0
+            val grandTotalDeliveredQuantity = updatedDeliveryOrderItems.sumOf { item ->
+                item.associatedDeliveryChallanItems.sumOf { it.deliveringQuantity }
+            }
 
 
             return deliveryOrder.copy(
@@ -275,7 +276,7 @@ class DeliveryOrderRepository(
 
     private val deliveryOrderItemMetaDataMapper = RowMapper { rs: ResultSet, _: Int ->
         DeliverOrderItemMetadata(
-            id = rs.getString("do_number"),
+            id = rs.getString("id"),
             district = rs.getString("district"),
             taluka = rs.getString("taluka"),
             locationName = rs.getString("locationName"),
@@ -362,8 +363,8 @@ class DeliveryOrderRepository(
         val deliveryOrder = jdbcTemplate.queryForObject(headerSql, { rs, _ ->
             DeliveryOrderExportData(
                 do_number = rs.getString("do_number"),
-                totalQuantity = rs.getInt("total_quantity"),
-                totalDelivered = rs.getInt("total_delivered"),
+                totalQuantity = rs.getDouble("total_quantity"),
+                totalDelivered = rs.getDouble("total_delivered"),
                 clientContactNumber = rs.getString("client_contact_number"),
                 partyName = rs.getString("party_name"),
                 dateOfContract = rs.getLong("dateofcontract"),
@@ -383,7 +384,6 @@ class DeliveryOrderRepository(
                 doi.quantity,
                 doi.rate,
                 doi.duedate,
-                doi.status,
                 COALESCE(
                     (
                         SELECT SUM(dci.deliveringquantity)
@@ -408,8 +408,8 @@ class DeliveryOrderRepository(
                 taluka = rs.getString("taluka"),
                 locationName = rs.getString("location_name"),
                 materialName = rs.getString("material_name"),
-                quantity = rs.getInt("quantity"),
-                deliveredQuantity = rs.getInt("delivered_quantity"),
+                quantity = rs.getDouble("quantity"),
+                deliveredQuantity = rs.getDouble("delivered_quantity"),
                 rate = rs.getDouble("rate"),
                 dueDate = rs.getLong("duedate"),
                 status = rs.getString("status")

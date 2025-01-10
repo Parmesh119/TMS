@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS Users (
 );
 
 CREATE TABLE IF NOT EXISTS DeliveryOrder (
-    do_number VARCHAR(255) PRIMARY KEY, -- Changed from 'id' to 'do_number'
+    do_number VARCHAR(255) PRIMARY KEY,
     contractId TEXT,
     partyId TEXT,
     dateOfContract BIGINT,
@@ -73,9 +73,8 @@ CREATE TABLE IF NOT EXISTS DeliveryOrderItem (
     taluka TEXT,
     locationId TEXT,
     materialId TEXT,
-    quantity INT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending',
-    rate INT,
+    quantity DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    rate DOUBLE PRECISION NOT NULL DEFAULT 0.0,
     unit TEXT,
     dueDate BIGINT,
     FOREIGN KEY (do_number) REFERENCES DeliveryOrder(do_number) -- Foreign key updated to reference do_number

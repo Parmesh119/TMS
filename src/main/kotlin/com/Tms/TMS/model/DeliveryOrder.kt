@@ -4,25 +4,22 @@ import java.time.LocalDateTime
 import java.util.*
 
 data class deliveryorder (
-    val id: String? , // will contain do_number
+    val id: String? ,
     val contractId: String?,
     val partyId: String?,
     val partyName: String?,
     val dateOfContract: Long?,
     val status: String,
     val created_at: LocalDateTime?,
-    val grandTotalQuantity: Int? = 0,
-    val grandTotalPendingQuantity: Int? = 0,
-    val grandTotalDeliveredQuantity: Int? = 0,
+    val grandTotalQuantity: Double? = 0.0,
+    val grandTotalDeliveredQuantity: Double? = 0.0,
     val deliveryOrderSections: List<deliveryOrderSections>?,
 )
 
 data class deliveryOrderSections (
     val district: String?,
-    val totalQuantity: Int = 0,
-    val totalPendingQuantity: Int = 0,
-    val totalDeliveredQuantity: Int = 0,
-    val status: String = "pending",
+    val totalQuantity: Double = 0.0,
+    val totalDeliveredQuantity: Double = 0.0,
     val deliveryOrderItems: List<deliveryOrderItems> = emptyList()
 )
 
@@ -33,11 +30,9 @@ data class deliveryOrderItems (
     val taluka: String?,
     val locationId: String?,
     val materialId: String?,
-    val quantity: Int,
-    val pendingQuantity: Int? = 0,
-    val deliveredQuantity: Int? = 0,
-    val status: String = "pending",
-    val rate: Float?,
+    val quantity: Double = 0.0,
+    val deliveredQuantity: Double = 0.0,
+    val rate: Double = 0.0,
     val unit: String?,
     val dueDate: Long?,
     val associatedDeliveryChallanItems: List<AssociatedDeliverChallanItemMetadata> = emptyList()
@@ -70,13 +65,15 @@ data class ListDeliveryOrderItem(
     val contractId: String?,
     val partyName: String?,
     val status: String?,
+    val grandTotalDeliveredQuantity: Double? = 0.0,
+    val grandTotalQuantity: Double? = 0.0,
     val dateOfContract: Long?
 )
 
 data class DeliveryOrderExportData(
     val do_number: String,
-    val totalQuantity: Int,
-    val totalDelivered: Int,
+    val totalQuantity: Double,
+    val totalDelivered: Double,
     val clientContactNumber: String?,
     val partyName: String?,
     val dateOfContract: Long?,  // Updated to be nullable
@@ -89,8 +86,8 @@ data class DeliveryOrderItemExportData(
     val taluka: String,
     val locationName: String?,
     val materialName: String?,
-    val quantity: Int,
-    val deliveredQuantity: Int,
+    val quantity: Double,
+    val deliveredQuantity: Double,
     val rate: Double,
     val dueDate: Long?,  // Updated to be nullable
     val status: String

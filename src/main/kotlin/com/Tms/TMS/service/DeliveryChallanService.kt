@@ -1,6 +1,6 @@
 package com.Tms.TMS.service
 
-import com.Tms.TMS.model.DeliveryChallan
+import com.Tms.TMS.model.*
 import com.Tms.TMS.repository.DeliveryChallanRepository
 import com.Tms.TMS.repository.DeliveryOrderRepository
 import org.springframework.stereotype.Service
@@ -10,7 +10,7 @@ import java.util.UUID
 
 @Service
 class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChallanRepository,
-    private val deliveryOrderRepository: DeliveryOrderRepository) {
+                             private val deliveryOrderRepository: DeliveryOrderRepository) {
 
     fun generateDeliveryChallanId(): String {
         val rowCount = deliveryChallanRepository.getDeliveryChallanCount()
@@ -28,7 +28,7 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
             val deliveryChallan = DeliveryChallan(
                 id = generateDeliveryChallanId(),
                 deliveryOrderId = do_id,
-                status = "in-progress",
+                status = "delivered",
                 created_at = Instant.now().epochSecond,
                 updated_at = Instant.now().epochSecond,
                 dateOfChallan = Instant.now().epochSecond,
@@ -71,10 +71,21 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
                     } else {
                         item
                     }
+                }.map { item ->
+                    val deliveryOrderItem = deliveryOrderRepository.findById(deliveryChallan.deliveryOrderId!!)?.deliveryOrderSections?.flatMap { it.deliveryOrderItems }
+                        ?.find { it.id == item.deliveryOrderItemId }
+                        ?: throw Exception("Delivery Order Item not found")
+
+                    val updatedDeliveringQuantity = if(item.deliveringQuantity > deliveryOrderItem.quantity) {
+                        deliveryOrderItem.quantity
+                    } else {
+                        item.deliveringQuantity
+                    }
+                    item.copy(deliveringQuantity = updatedDeliveringQuantity)
                 },
                 status = deliveryChallan.status,
                 partyName = deliveryChallan.partyName,
-                totalDeliveringQuantity = deliveryChallan.totalDeliveringQuantity,
+                totalDeliveringQuantity = deliveryChallan.deliveryChallanItems.sumOf { it.deliveringQuantity },
                 updated_at = Instant.now().epochSecond,
                 transportationCompanyId = deliveryChallan.transportationCompanyId,
                 vehicleId = deliveryChallan.vehicleId,
@@ -89,81 +100,57 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
     }
 
 
+    fun listDeliveryChallans(
+        search: String? = null,
+        page: Int,
+        size: Int,
+        deliveryOrderIds: List<String>? = emptyList(),
+        fromDate: Long?,
+        toDate: Long?,
+        status: List<String>? = emptyList(),
+        partyIds: List<String>? = emptyList(),
+        transportationCompanyIds: List<String>? = emptyList(),
+        getAll: Boolean,
+        sortField: String,
+        sortOrder: String
+    ): List<DeliveryChallanOutputRecord> {
+        return deliveryChallanRepository.findAll(
+            search,
+            page,
+            size,
+            deliveryOrderIds,
+            fromDate,
+            toDate,
+            status,
+            partyIds,
+            transportationCompanyIds,
+            getAll,
+            sortField,
+            sortOrder
+        ).map { challan ->
+            val deliveryOrder = deliveryOrderRepository.findById(challan.deliveryOrderId!!)
+                ?: throw  Exception("Delivery Order not Found")
+            val totalDeliveredQuantity = challan.deliveryChallanItems.sumOf { it.deliveringQuantity }
+            val deliveryOrderItem = deliveryOrder.deliveryOrderSections?.flatMap { it.deliveryOrderItems }
+                ?.find { challan.deliveryChallanItems.any { item -> item.deliveryOrderItemId == it.id } }
+            val totalQuantity = deliveryOrderItem?.quantity ?: 0.0
 
 
-    fun listDeliveryChallans(search: String? =null, page: Int, size: Int, deliveryOrderIds: List<String>? = emptyList(), fromDate: Long?, toDate: Long?, status: List<String>? = emptyList(), partyIds: List<String>? = emptyList(), transportationCompanyIds: List<String>? = emptyList(), getAll: Boolean,  sortField: String, sortOrder: String): List<DeliveryChallan> {
-        val results = deliveryChallanRepository.findAll(search, page, size, deliveryOrderIds, fromDate, toDate, status, partyIds, transportationCompanyIds, getAll, sortField, sortOrder)
-        return results
+            val updatedStatus = when {
+                totalDeliveredQuantity >= totalQuantity -> "delivered"
+                totalDeliveredQuantity > 0 -> "partially-delivered"
+                else -> "pending"
+            }
+            DeliveryChallanOutputRecord(
+                id = challan.id,
+                deliveryOrderId = challan.deliveryOrderId,
+                dateOfChallan = challan.dateOfChallan,
+                status = updatedStatus,
+                partyName = challan.partyName,
+                transportationCompanyName = challan.transportationCompanyName,
+                driverName = null, // You might need additional logic to fetch driver name
+                totalDeliveringQuantity = challan.totalDeliveringQuantity,
+            )
+        }
     }
-
-    //    fun updateDeliveryChallan(deliveryChallan: DeliveryChallan): DeliveryChallan? {
-//        return try {
-//            if (deliveryChallan.id == null) {
-//                throw Exception("Delivery Challan ID is required")
-//            }
-//
-//            // Step 1: Fetch deliveryOrderId associated with the given deliveryChallan.id
-//            val deliveryOrderId = deliveryChallanRepository.findDeliveryOrderIdByChallanId(deliveryChallan.id!!)
-//                ?: throw Exception("No associated Delivery Order found for this Delivery Challan")
-//
-//            // Step 2: Fetch all deliveryOrderItem IDs associated with the deliveryOrderId
-//            val deliveryOrderItemIds = deliveryChallanRepository.findIdsByDeliveryOrderId(deliveryOrderId)
-////            println("Valid Delivery Order Item IDs: $deliveryOrderItemIds")
-//
-//            // Create a set for quick lookup of valid deliveryOrderItem IDs
-//            val validItemIds = deliveryOrderItemIds.toSet()
-//
-//            // Step 3: Fetch the existing delivery challan from the database
-//            val existingDeliveryChallan = deliveryChallanRepository.findById(deliveryChallan.id!!)
-//                ?: throw Exception("Delivery Challan not found")
-//
-//            // Step 4: Validate and map deliveryChallanItems
-//            val updatedItems = deliveryChallan.deliveryChallanItems.map { newItem ->
-//                if (newItem.deliveryorderItemId == null) {
-//                    // Try to find a valid deliveryOrderItemId
-//                    val validId = validItemIds.firstOrNull()
-//                    if (validId == null) {
-//                        throw Exception("No valid deliveryOrderItemId available for item: $newItem")
-//                    }
-//
-//                    // Assign a valid deliveryOrderItemId to the item
-//                    newItem.copy(
-//                        id = newItem.id ?: UUID.randomUUID().toString(),
-//                        deliveryorderItemId = validId
-//                    )
-//                } else {
-//                    // Ensure the existing deliveryOrderItemId is valid
-//                    if (!validItemIds.contains(newItem.deliveryorderItemId)) {
-//                        throw Exception("Invalid deliveryOrderItemId: ${newItem.deliveryorderItemId}")
-//                    }
-//
-//                    // Update the item without changing the ID
-//                    newItem.copy(
-//                        deliveringQuantity = newItem.deliveringQuantity,
-//                        deliveryorderItemId = newItem.deliveryorderItemId
-//                    )
-//                }
-//            }
-//
-//            // Step 5: Prepare the updated delivery challan
-//            val updatedChallan = existingDeliveryChallan.copy(
-//                deliveryChallanItems = updatedItems,
-//                dateOfChallan = Instant.now().epochSecond,
-//                updated_at = Instant.now().epochSecond
-//            )
-//
-//            // Debugging: Log the updated delivery challan
-////            println("Updated Delivery Challan: $updatedChallan")
-//
-//            // Step 6: Save the updated delivery challan
-//            val updatedRows = deliveryChallanRepository.updateWithItem(updatedChallan)
-//            if (updatedRows > 0) {
-//                return updatedChallan
-//            }
-//            throw Exception("Failed to update Delivery Challan")
-//        } catch (ex: Exception) {
-////            println("Error updating Delivery Challan: ${ex.message}")
-//            throw ex
-//        }
-//    }
 }

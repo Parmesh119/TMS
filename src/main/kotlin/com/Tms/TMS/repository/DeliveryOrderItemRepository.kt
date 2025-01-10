@@ -17,11 +17,10 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
             taluka = rs.getString("taluka"),
             locationId = rs.getString("locationId"),
             materialId = rs.getString("materialId"),
-            quantity = rs.getInt("quantity"),
-            rate = rs.getFloat("rate").takeIf { !rs.wasNull() },
+            quantity = rs.getDouble("quantity"),
+            rate = rs.getDouble("rate"),
             unit = rs.getString("unit"),
             dueDate = rs.getLong("dueDate").takeIf { !rs.wasNull() },
-            status = rs.getString("status")
         )
     }
 
@@ -31,8 +30,8 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
         val sql = """
             INSERT INTO deliveryorderitem (
                 id, do_number, district, taluka, locationId, materialId, quantity,
-               rate, unit, dueDate, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               rate, unit, dueDate
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         try {
@@ -49,7 +48,6 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
                     item.rate ?: 0.0,
                     item.unit,
                     item.dueDate ?: 0,
-                    item.status
                 )
             }
         } catch (e: Exception) {
@@ -109,8 +107,7 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
             quantity = ?, 
             rate = ?, 
             unit = ?, 
-            dueDate = ?, 
-            status = ?
+            dueDate = ?
         WHERE id = ? AND do_number = ?
     """
 
@@ -126,7 +123,6 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
                     item.rate ?: 0,
                     item.unit,
                     item.dueDate ?: 0,
-                    item.status,
                     item.id,
                     item.deliveryOrderId
                 )
@@ -153,8 +149,8 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
         val sql = """
             INSERT INTO deliveryorderitem (
                 id, do_number, district, taluka, locationId, materialId, quantity,
-               rate, unit, dueDate, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               rate, unit, dueDate
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         try {
             items.forEach { item ->
@@ -169,8 +165,7 @@ class DeliveryOrderItemRepository(private val jdbcTemplate: JdbcTemplate) {
                     item.quantity,
                     item.rate ?: 0.0,
                     item.unit,
-                    item.dueDate ?: 0,
-                    item.status
+                    item.dueDate ?: 0
                 )
             }
         } catch (e: Exception) {

@@ -2,6 +2,7 @@ package com.Tms.TMS.controller
 
 import com.Tms.TMS.model.DeliveryChallan
 import com.Tms.TMS.model.DeliveryChallanListRequest
+import com.Tms.TMS.model.DeliveryChallanOutputRecord
 import com.Tms.TMS.service.DeliveryChallanService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -33,7 +34,7 @@ class DeliveryChallanController(private val deliveryChallanService: DeliveryChal
     @PostMapping("/list")
     fun listDeliveryChallans(
         @RequestBody request: DeliveryChallanListRequest
-    ): ResponseEntity<List<DeliveryChallan>> {
+    ): ResponseEntity<List<DeliveryChallanOutputRecord>> { // Corrected return type
         return ResponseEntity.ok(
             deliveryChallanService.listDeliveryChallans(
                 request.search,
