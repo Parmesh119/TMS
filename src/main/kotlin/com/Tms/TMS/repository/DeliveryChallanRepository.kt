@@ -16,6 +16,8 @@ import java.util.*
 @Repository
 class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
 
+    var deliveredQuantity: Double = 0.0
+
     fun getDeliveryChallanCount(): Int? {
         val sql = "SELECT COUNT(*) FROM deliverychallan"
         return jdbcTemplate.queryForObject(sql, Int::class.java)
@@ -152,10 +154,19 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
                 throw Exception("Some delivery order items not found")
             }
 
-            // 6. Return updated challan
-            return findById(deliveryChallan.id)
-                ?: throw Exception("Failed to retrieve updated delivery challan")
 
+
+            // 6. Return updated challan
+            deliveryChallan.deliveryChallanItems.forEach { item ->
+                val deliveredQuantitySql = """
+                SELECT SUM(deliveringquantity)
+                FROM deliverychallanitem
+                WHERE deliveryorderitemid = ?
+            """
+                val deliveredQuantity = jdbcTemplate.queryForObject(deliveredQuantitySql, Double::class.java, item.deliveryOrderItemId) ?: 0.0
+                item.deliveredQuantity = deliveredQuantity
+            }
+            return deliveryChallan
         } catch (e: Exception) {
             println("Error updating delivery challan: ${e.message}")
             e.printStackTrace()
@@ -242,7 +253,7 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
         COALESCE(SUM(CASE 
             WHEN dc.status = 'delivered' THEN dci_sub.deliveringquantity 
             ELSE 0
-        END), 0) AS delivered_quantity
+        END), 0) AS deliveredQuantity
     FROM 
         deliverychallanitem dci
     JOIN 
@@ -274,7 +285,8 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
                     quantity = rs.getDouble("quantity"),
                     rate = rs.getDouble("rate"),
                     dueDate = rs.getLong("duedate"),
-                    deliveringQuantity = rs.getDouble("deliveringquantity")
+                    deliveringQuantity = rs.getDouble("deliveringquantity"),
+                    deliveredQuantity = rs.getDouble("deliveredQuantity")
                 )
             }, id)
         } catch (ex: Exception) {

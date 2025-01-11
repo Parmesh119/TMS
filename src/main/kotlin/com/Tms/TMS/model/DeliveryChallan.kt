@@ -28,7 +28,7 @@ data class DeliveryChallanItems (
     val locationName: String?,
     val materialName: String?,
     val quantity: Double = 0.0,
-    val deliveredQuantity: Double = 0.0,
+    var deliveredQuantity: Double = 0.0,
     val rate: Double = 0.0,
     val dueDate: Long?,
     val deliveringQuantity: Double = 0.0,
