@@ -267,19 +267,6 @@ class DeliveryOrderRepository(
         }
     }
 
-    fun updateStatus(id: String, status: String): String {
-        try {
-            val sql = "UPDATE deliveryorder SET status = ? WHERE do_number = ?"
-            return if (jdbcTemplate.update(sql, status, id) > 0) {
-                "Delivery order status updated successfully"
-            } else {
-                throw Exception("Failed to update delivery order status")
-            }
-        } catch (e: Exception) {
-            throw e
-        }
-    }
-
     fun deleteById(id: String): Int {
         try {
             return jdbcTemplate.update(

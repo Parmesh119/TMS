@@ -81,10 +81,13 @@ class DeliveryOrderService(
         val updatedDeliveryOrder = deliveryOrderRepository.findById(orderRequest.id)
             ?: throw RuntimeException("Delivery order not found")
 
-        return updatedDeliveryOrder.copy(
+        val res = updatedDeliveryOrder.copy(
             grandTotalQuantity = updatedDeliveryOrder.grandTotalQuantity,
-            grandTotalDeliveredQuantity = updatedDeliveryOrder.grandTotalDeliveredQuantity
+            grandTotalDeliveredQuantity = updatedDeliveryOrder.grandTotalDeliveredQuantity,
+            status = updatedDeliveryOrder.status
         )
+
+        return res
     }
 
     fun deleteOrder(id: String): Int {

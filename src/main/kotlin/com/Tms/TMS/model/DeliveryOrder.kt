@@ -4,12 +4,12 @@ import java.time.LocalDateTime
 import java.util.*
 
 data class deliveryorder (
-    val id: String? ,
+    val id: String?,
     val contractId: String?,
     val partyId: String?,
     val partyName: String?,
     val dateOfContract: Long?,
-    val status: String,
+    var status: String,
     val created_at: LocalDateTime?,
     val grandTotalQuantity: Double? = 0.0,
     val grandTotalDeliveredQuantity: Double? = 0.0,

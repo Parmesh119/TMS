@@ -152,6 +152,19 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
                 throw Exception("Some delivery order items not found")
             }
 
+//             update status based on delivery order
+            var grandtotal = deliveryChallan.totalDeliveringQuantity
+            var total: Double = 0.0
+            for (item in deliveryChallan.deliveryChallanItems) {
+                total += item.quantity
+            }
+
+            if(grandtotal == total) {
+                updateStatus(deliveryChallan.deliveryOrderId!!, "delivered")
+            } else {
+                updateStatus(deliveryChallan.deliveryOrderId!!, "pending")
+            }
+
             // 6. Return updated challan
             return findById(deliveryChallan.id)
                 ?: throw Exception("Failed to retrieve updated delivery challan")
@@ -160,6 +173,20 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
             println("Error updating delivery challan: ${e.message}")
             e.printStackTrace()
             throw Exception("Failed to update delivery challan: ${e.message}")
+        }
+    }
+
+    fun updateStatus(id: String, status: String): String {
+        try {
+            val sql = "UPDATE deliveryorder SET status = ? WHERE do_number = ?"
+            val res = jdbcTemplate.update(sql, status, id) > 0
+            return if (res) {
+                "Delivery order status updated successfully"
+            } else {
+                "Failed to update delivery order status"
+            }
+        } catch (e: Exception) {
+            throw e
         }
     }
 
