@@ -104,3 +104,25 @@ data class AssociatedDeliverChallanItemMetadata(
     val deliveringQuantity: Double = 0.0,
     val deliveryChallanId: String
 )
+
+data class DeliveryChallanExportDataXlsx (
+    val dc_number: String,
+    val do_number: String?,
+    val dateOfChallan: Long?,
+    val status: String?,
+    val totalDeliveringQuantity: Double,
+    val transportationCompanyName: String?,
+    val vehicleNumber: String,
+    val vehicleType: String,
+    val driverName: String,
+    val items : List<DeliveryChallanItemExportData>
+)
+
+data class DeliveryChallanItemExportData(
+    val district: String,
+    val taluka: String,
+    val locationName: String?,
+    val materialName: String?,
+    val deliveringQuantity: Double,
+    val rate: Double
+)

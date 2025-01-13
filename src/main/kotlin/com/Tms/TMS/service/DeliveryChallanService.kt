@@ -77,7 +77,7 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
                         ?: throw Exception("Delivery Order Item not found")
 
                     val updatedDeliveringQuantity = if(item.deliveringQuantity > deliveryOrderItem.quantity) {
-                        deliveryOrderItem.quantity
+                        throw Exception("Delivering Quantity cannot be greater than Order Quantity")
                     } else {
                         item.deliveringQuantity
                     }

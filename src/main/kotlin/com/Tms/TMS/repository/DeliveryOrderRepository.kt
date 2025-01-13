@@ -267,6 +267,19 @@ class DeliveryOrderRepository(
         }
     }
 
+    fun updateStatus(id: String, status: String): String {
+        try {
+            val sql = "UPDATE deliveryorder SET status = ? WHERE do_number = ?"
+            return if (jdbcTemplate.update(sql, status, id) > 0) {
+                "Delivery order status updated successfully"
+            } else {
+                throw Exception("Failed to update delivery order status")
+            }
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
     fun deleteById(id: String): Int {
         try {
             return jdbcTemplate.update(
@@ -345,24 +358,24 @@ class DeliveryOrderRepository(
 
     fun getDeliveryOrderWithDetails(doNumber: String): DeliveryOrderExportData? {
         val headerSql = """
-            SELECT 
-                d_order.do_number,
-                d_order.dateofcontract,
-                p.contactnumber as client_contact_number,
-                p.name as party_name,
-                (SELECT SUM(quantity) FROM deliveryorderitem WHERE do_number = ?) as total_quantity,
-                (
-                    SELECT COALESCE(SUM(dci.deliveringquantity), 0)
-                    FROM deliverychallan dc
-                    JOIN deliverychallanitem dci ON dc.dc_number = dci.dc_number
-                    WHERE dc.do_number = ? AND dc.status = 'delivered'
-                ) as total_delivered
-            FROM    
-                deliveryorder d_order
-                LEFT JOIN party_location p ON d_order.partyid = p.id
-            WHERE 
-                d_order.do_number = ?
-        """.trimIndent()
+        SELECT 
+            d_order.do_number,
+            d_order.dateofcontract,
+            p.contactnumber as client_contact_number,
+            p.name as party_name,
+            (SELECT SUM(quantity) FROM deliveryorderitem WHERE do_number = ?) as total_quantity,
+            (
+                SELECT COALESCE(SUM(dci.deliveringquantity), 0)
+                FROM deliverychallan dc
+                JOIN deliverychallanitem dci ON dc.dc_number = dci.dc_number
+                WHERE dc.do_number = ? AND dc.status = 'delivered'
+            ) as total_delivered
+        FROM    
+            deliveryorder d_order
+            LEFT JOIN party_location p ON d_order.partyid = p.id
+        WHERE 
+            d_order.do_number = ?
+    """.trimIndent()
 
         val deliveryOrder = jdbcTemplate.queryForObject(headerSql, { rs, _ ->
             DeliveryOrderExportData(
@@ -379,32 +392,41 @@ class DeliveryOrderRepository(
 
         // Get delivery order items
         val itemsSql = """
-            SELECT 
-                doi.id,
-                doi.district,
-                doi.taluka,
-                l.name as location_name,
-                m.name as material_name,
-                doi.quantity,
-                doi.rate,
-                doi.duedate,
-                COALESCE(
-                    (
-                        SELECT SUM(dci.deliveringquantity)
-                        FROM deliverychallanitem dci
-                        JOIN deliverychallan dc ON dci.dc_number = dc.dc_number
-                        WHERE dci.deliveryorderitemid = doi.id AND dc.status = 'delivered'
-                    ), 0
-                ) as delivered_quantity
-            FROM 
-                deliveryorderitem doi
-                LEFT JOIN location l ON doi.locationid = l.id
-                LEFT JOIN material m ON doi.materialid = m.id
-            WHERE 
-                doi.do_number = ?
-            ORDER BY 
-                doi.district, doi.id
-        """.trimIndent()
+        SELECT 
+            doi.id,
+            doi.district,
+            doi.taluka,
+            l.name as location_name,
+            m.name as material_name,
+            doi.quantity,
+            doi.rate,
+            doi.duedate,
+            COALESCE(
+                (
+                    SELECT SUM(dci.deliveringquantity)
+                    FROM deliverychallanitem dci
+                    JOIN deliverychallan dc ON dci.dc_number = dc.dc_number
+                    WHERE dci.deliveryorderitemid = doi.id AND dc.status = 'delivered'
+                ), 0
+            ) as delivered_quantity,
+            CASE 
+                WHEN doi.quantity <= COALESCE((
+                    SELECT SUM(dci.deliveringquantity)
+                    FROM deliverychallanitem dci
+                    JOIN deliverychallan dc ON dci.dc_number = dc.dc_number
+                    WHERE dci.deliveryorderitemid = doi.id AND dc.status = 'delivered'
+                ), 0) THEN 'delivered'
+                ELSE 'pending'
+            END as status
+        FROM 
+            deliveryorderitem doi
+            LEFT JOIN location l ON doi.locationid = l.id
+            LEFT JOIN material m ON doi.materialid = m.id
+        WHERE 
+            doi.do_number = ?
+        ORDER BY 
+            doi.district, doi.id
+    """.trimIndent()
 
         val items = jdbcTemplate.query(itemsSql, { rs, _ ->
             DeliveryOrderItemExportData(
@@ -446,5 +468,73 @@ class DeliveryOrderRepository(
             items = items,
             challans = challans
         )
+    }
+
+    fun getDeliveryChallanDetails(dcNumber: String): DeliveryChallanExportDataXlsx? {
+        val challanSql = """
+        SELECT 
+            dc.dc_number,
+            dc.do_number,
+            dc.dateofchallan,
+            dc.status,
+            dc.totaldeliveringquantity,
+            tc.company_name as transportation_company_name,
+            v.vehicle_number as vehicle_number,
+            v.vehicle_type as vehicle_type,
+            d.name as driver_name
+        FROM 
+            deliverychallan dc
+            LEFT JOIN transportationcompany tc ON dc.transportationCompanyId = tc.id
+            LEFT JOIN vehicles v ON dc.vehicleId = v.id
+            LEFT JOIN drivers d ON dc.driverId = d.id
+        WHERE 
+            dc.dc_number = ?
+    """.trimIndent()
+
+        val challan = jdbcTemplate.queryForObject(challanSql, { rs, _ ->
+            DeliveryChallanExportDataXlsx(
+                dc_number = rs.getString("dc_number"),
+                do_number = rs.getString("do_number"),
+                dateOfChallan = rs.getLong("dateofchallan"),
+                status = rs.getString("status"),
+                totalDeliveringQuantity = rs.getDouble("totaldeliveringquantity"),
+                transportationCompanyName = rs.getString("transportation_company_name"),
+                vehicleNumber = rs.getString("vehicle_number"),
+                vehicleType = rs.getString("vehicle_type"),
+                driverName = rs.getString("driver_name"),
+                items = mutableListOf()
+            )
+        }, dcNumber) ?: return null
+
+        val itemsSql = """
+        SELECT 
+            dci.id,
+            doi.district,
+            doi.taluka,
+            l.name as location_name,
+            m.name as material_name,
+            dci.deliveringquantity,
+            doi.rate
+        FROM 
+            deliverychallanitem dci
+            JOIN deliveryorderitem doi ON dci.deliveryorderitemid = doi.id
+            LEFT JOIN location l ON doi.locationid = l.id
+            LEFT JOIN material m ON doi.materialid = m.id
+        WHERE 
+            dci.dc_number = ?
+    """.trimIndent()
+
+        val items = jdbcTemplate.query(itemsSql, { rs, _ ->
+            DeliveryChallanItemExportData(
+                district = rs.getString("district"),
+                taluka = rs.getString("taluka"),
+                locationName = rs.getString("location_name"),
+                materialName = rs.getString("material_name"),
+                deliveringQuantity = rs.getDouble("deliveringquantity"),
+                rate = rs.getDouble("rate")
+            )
+        }, dcNumber)
+
+        return challan.copy(items = items)
     }
 }

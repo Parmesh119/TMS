@@ -7,9 +7,13 @@ import com.Tms.TMS.model.deliveryorder
 import com.Tms.TMS.service.DeliveryOrderService
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 @RestController
 @CrossOrigin
@@ -101,18 +105,37 @@ class DeliveryOrderController(private val deliveryOrderService: DeliveryOrderSer
         return ResponseEntity.ok(deliveryOrderService.listDeliveryOrderItemsForDeliveryOrderId(deliveryOrderId))
     }
 
-    @GetMapping("/download-csv/{do_number}")
-    fun exportDeliveryOrder(@PathVariable do_number: String): ResponseEntity<ByteArray> {
-        val csvData = deliveryOrderService.generateCsvFile(do_number)
+    @GetMapping("/download-all-excel/{do_number}")
+    fun exportAllFiles(@PathVariable do_number: String): ResponseEntity<ByteArray> {
+        val files = deliveryOrderService.generateAllExcelFiles(do_number)
 
-        // Save the file locally
-        val fileName = "delivery_order_${do_number}.csv"
-        val file = File(fileName)
-        file.writeBytes(csvData)
+        // Create DO-specific directory
+        val doDir = File("exports/$do_number")
+        if (!doDir.exists()) {
+            doDir.mkdirs()
+        }
+
+        // Create ZIP file containing all Excel files
+        val baos = ByteArrayOutputStream()
+        val zos = ZipOutputStream(baos)
+
+        files.forEach { (filename, data) ->
+            // Save individual file
+            val file = File(doDir, filename)
+            file.writeBytes(data)
+
+            // Add to ZIP
+            zos.putNextEntry(ZipEntry(filename))
+            zos.write(data)
+            zos.closeEntry()
+        }
+
+        zos.close()
 
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=$fileName")
-            .header(HttpHeaders.CONTENT_TYPE, "text/csv")
-            .body(csvData)
+            .header(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=DO_${do_number}_all_files.zip")
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(baos.toByteArray())
     }
 }
