@@ -243,34 +243,140 @@ class DeliveryOrderService(
         }
     }
 
-    fun generateAllExcelFiles(doNumber: String): Map<String, ByteArray> {
-        val files = mutableMapOf<String, ByteArray>()
+    fun generateAllExcelFiles(doNumber: String): ByteArray {
+        val workbook = XSSFWorkbook()
 
-        // Generate main DO file
+        // Generate main DO sheet
+        generateDoSheet(workbook, doNumber)
 
-        files["delivery_order - $doNumber.xlsx"] = generateDoXlsxFile(doNumber)
 
         // Get all DCs for this DO
         val deliveryOrderData = deliveryOrderRepository.getDeliveryOrderWithDetails(doNumber)
 
 
-        // Generate individual DC files
-        deliveryOrderData?.let{
+        // Generate individual DC sheets
+        deliveryOrderData?.let {
             it.challans.forEach { challan ->
-                files["delivery_challan - ${challan.dc_number}.xlsx"] = generateDcXlsxFile(challan.dc_number)
+                generateDcSheet(workbook, challan.dc_number)
             }
         }
 
-
-        return files
+        return ByteArrayOutputStream().use { out ->
+            workbook.write(out)
+            out.toByteArray()
+        }
     }
 
-    private fun generateDcXlsxFile(dcNumber: String): ByteArray {
+    private fun generateDoSheet(workbook: XSSFWorkbook, doNumber: String) {
+        val deliveryOrderData = deliveryOrderRepository.getDeliveryOrderWithDetails(doNumber)
+            ?: throw RuntimeException("Delivery order not found")
+
+        val sheet = workbook.createSheet("Delivery Order - $doNumber")
+        var rowNum = 0
+
+        // Create cell styles
+        val headerStyle = workbook.createCellStyle().apply {
+            setFont(workbook.createFont().apply {
+                bold = true
+            })
+            fillForegroundColor = IndexedColors.LIGHT_CORNFLOWER_BLUE.index
+            fillPattern = FillPatternType.SOLID_FOREGROUND
+        }
+
+        // Header section
+        createRow(sheet, rowNum++, listOf("DO Number", deliveryOrderData.do_number))
+        createRow(sheet, rowNum++, listOf("Total Quantity", deliveryOrderData.totalQuantity.toString()))
+        createRow(sheet, rowNum++, listOf("Total Delivered", deliveryOrderData.totalDelivered.toString()))
+        createRow(sheet, rowNum++, listOf("Client Contact Number", deliveryOrderData.clientContactNumber))
+        createRow(sheet, rowNum++, listOf("Party", deliveryOrderData.partyName))
+        createRow(sheet, rowNum++, listOf("Date Of Contract", formatDate(deliveryOrderData.dateOfContract)))
+        rowNum++
+
+        // Delivery Order Items section
+        createRow(sheet, rowNum++, listOf("Delivery Order Items"), headerStyle)
+        val itemHeaders = listOf("Sr No", "District", "Taluka", "Location", "Material",
+            "Quantity", "Delivered Quantity", "Rate", "Due Date", "Status")
+        createRow(sheet, rowNum++, itemHeaders, headerStyle)
+
+        var srNo = 1
+        var currentDistrict: String? = null
+        var districtQuantity = 0.0
+        var districtDeliveredQuantity = 0.0
+
+        deliveryOrderData.items.forEach { item ->
+            if (currentDistrict != item.district) {
+                if (currentDistrict != null) {
+                    createRow(sheet, rowNum++, listOf(
+                        "Total For District: $currentDistrict",
+                        "",
+                        "",
+                        "",
+                        "",
+                        districtQuantity.toString(),
+                        districtDeliveredQuantity.toString()
+                    ))
+                    rowNum++
+                }
+                currentDistrict = item.district
+                districtQuantity = 0.0
+                districtDeliveredQuantity = 0.0
+                srNo = 1
+            }
+
+            createRow(sheet, rowNum++, listOf(
+                srNo.toString(),
+                item.district,
+                item.taluka,
+                item.locationName,
+                item.materialName,
+                item.quantity.toString(),
+                item.deliveredQuantity.toString(),
+                item.rate.toString(),
+                formatDate(item.dueDate),
+                item.status
+            ))
+
+            districtQuantity += item.quantity
+            districtDeliveredQuantity += item.deliveredQuantity
+            srNo++
+        }
+
+        // Last district total
+        currentDistrict?.let {
+            createRow(sheet, rowNum++, listOf(
+                "Total For District: $it",
+                "",
+                "",
+                "",
+                "",
+                districtQuantity.toString(),
+                districtDeliveredQuantity.toString()
+            ))
+        }
+        rowNum++
+
+        // Delivery Challan section
+        createRow(sheet, rowNum++, listOf("Delivery Challan"), headerStyle)
+        createRow(sheet, rowNum++, listOf("Sr No", "Id", "Date", "Quantity"), headerStyle)
+
+        deliveryOrderData.challans.forEachIndexed { index, challan ->
+            createRow(sheet, rowNum++, listOf(
+                (index + 1).toString(),
+                challan.dc_number,
+                formatDate(challan.dateOfChallan),
+                challan.quantity.toString()
+            ))
+        }
+
+        // Auto-size columns
+        (0..9).forEach { sheet.autoSizeColumn(it) }
+    }
+
+    private fun generateDcSheet(workbook: XSSFWorkbook, dcNumber: String) {
         val challanData = deliveryOrderRepository.getDeliveryChallanDetails(dcNumber)
             ?: throw RuntimeException("Delivery challan not found")
 
-        val workbook = XSSFWorkbook()
-        val sheet = workbook.createSheet("Delivery Challan")
+        val sheet = workbook.createSheet("Delivery Challan - $dcNumber")
 
         var rowNum = 0
 
@@ -316,10 +422,5 @@ class DeliveryOrderService(
 
         // Auto-size columns
         (0..6).forEach { sheet.autoSizeColumn(it) }
-
-        return ByteArrayOutputStream().use { out ->
-            workbook.write(out)
-            out.toByteArray()
-        }
     }
 }

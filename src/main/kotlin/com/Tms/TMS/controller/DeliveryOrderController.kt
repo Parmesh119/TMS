@@ -105,37 +105,32 @@ class DeliveryOrderController(private val deliveryOrderService: DeliveryOrderSer
         return ResponseEntity.ok(deliveryOrderService.listDeliveryOrderItemsForDeliveryOrderId(deliveryOrderId))
     }
 
-    @GetMapping("/download-all-excel/{do_number}")
+    @GetMapping("/download-excel/{do_number}")
     fun exportAllFiles(@PathVariable do_number: String): ResponseEntity<ByteArray> {
-        val files = deliveryOrderService.generateAllExcelFiles(do_number)
+        val fileBytes = deliveryOrderService.generateAllExcelFiles(do_number)
 
-        // Create DO-specific directory
-        val doDir = File("exports/$do_number")
-        if (!doDir.exists()) {
-            doDir.mkdirs()
+        // Create the exports directory if it does not exist
+        val exportsDir = File("exports")
+        if (!exportsDir.exists()) {
+            exportsDir.mkdirs()
         }
 
-        // Create ZIP file containing all Excel files
-        val baos = ByteArrayOutputStream()
-        val zos = ZipOutputStream(baos)
+        // Create a file in the exports folder with filename according to do number
+        val fileName = "DO_${do_number}_all_files.xlsx"
+        val filePath = exportsDir.resolve(fileName)
 
-        files.forEach { (filename, data) ->
-            // Save individual file
-            val file = File(doDir, filename)
-            file.writeBytes(data)
-
-            // Add to ZIP
-            zos.putNextEntry(ZipEntry(filename))
-            zos.write(data)
-            zos.closeEntry()
+        try {
+            filePath.writeBytes(fileBytes)
+            println("File Saved Successfully at: ${filePath.absolutePath}")
+        } catch (e: Exception) {
+            // Handle file writing error properly (log it, etc)
+            println("Error Saving file: ${e.message}")
         }
-
-        zos.close()
 
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=DO_${do_number}_all_files.zip")
+                "attachment; filename=$fileName")
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
-            .body(baos.toByteArray())
+            .body(fileBytes)
     }
 }
