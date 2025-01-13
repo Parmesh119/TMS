@@ -41,7 +41,6 @@ class DeliveryOrderRepository(
             rate = rs.getDouble("rate"),
             unit = rs.getString("unit"),
             dueDate = rs.getLong("dueDate"),
-            deliveredQuantity = 0.0
         )
     }
 
@@ -129,13 +128,13 @@ class DeliveryOrderRepository(
     fun findById(id: String): deliveryorder? {
         return try {
             val deliveryOrderSql = """
-                SELECT 
-                    d.*,
-                    p.name AS partyName
-                FROM deliveryorder d
-                LEFT JOIN party_location p ON d.partyId = p.id
-                WHERE d.do_number = ?
-            """
+            SELECT 
+                d.*, 
+                p.name AS partyName
+            FROM deliveryorder d
+            LEFT JOIN party_location p ON d.partyId = p.id
+            WHERE d.do_number = ?
+        """
 
             val deliveryOrder = jdbcTemplate.queryForObject(deliveryOrderSql,
                 RowMapper { rs, _ ->
@@ -149,7 +148,7 @@ class DeliveryOrderRepository(
                         created_at = rs.getLong("created_at")?.let {
                             Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDateTime()
                         },
-                        deliveryOrderSections = emptyList()  // Initialize with empty list
+                        deliveryOrderSections = emptyList()
                     )
                 },
                 id
@@ -158,30 +157,36 @@ class DeliveryOrderRepository(
             val deliveryOrderItemsSql = "SELECT * FROM DeliveryOrderItem WHERE do_number = ?"
             val deliveryOrderItems = jdbcTemplate.query(deliveryOrderItemsSql, deliveryOrderItemRowMapper, id)
 
-            // Fetch Delivery Challan Items related to Delivery Order Items
             val deliveryChallanItemsSql = """
-               SELECT dci.deliveryOrderItemId, dc.dc_number AS deliveryChallanId, dci.deliveringQuantity
-                FROM deliveryChallanItem dci
-                JOIN deliverychallan dc ON dci.dc_number = dc.dc_number
-                WHERE dc.do_number = ?
-            """
+           SELECT 
+               dci.deliveryOrderItemId, 
+               dc.dc_number AS deliveryChallanId, 
+               COALESCE(SUM(dci.deliveringQuantity), 0.0) AS deliveredQuantity
+           FROM deliveryChallanItem dci
+           JOIN deliveryChallan dc ON dci.dc_number = dc.dc_number
+           WHERE dc.do_number = ?
+           GROUP BY dci.deliveryOrderItemId, dc.dc_number
+        """
             val deliveryChallanItems = jdbcTemplate.query(deliveryChallanItemsSql,
-                RowMapper{rs, _ ->
+                RowMapper { rs, _ ->
                     AssociatedDeliverChallanItemMetadata(
                         id = rs.getString("deliveryOrderItemId"),
-                        deliveringQuantity = rs.getDouble("deliveringQuantity"),
+                        deliveringQuantity = rs.getDouble("deliveredQuantity"),
                         deliveryChallanId = rs.getString("deliveryChallanId")
                     )
-                }, id
+                },
+                id
             )
 
-            // Group deliveryChallanItems by deliveryOrderItemId
             val deliveryChallanItemsGroupedByOrderItem = deliveryChallanItems.groupBy { it.id }
-
 
             val updatedDeliveryOrderItems = deliveryOrderItems.map { item ->
                 val associatedDCs = deliveryChallanItemsGroupedByOrderItem[item.id] ?: emptyList()
-                item.copy(associatedDeliveryChallanItems = associatedDCs)
+                val deliveredQuantity = associatedDCs.sumOf { it.deliveringQuantity }
+                item.copy(
+                    deliveredQuantity = deliveredQuantity,
+                    associatedDeliveryChallanItems = associatedDCs
+                )
             }
 
             val sections = updatedDeliveryOrderItems.groupBy { it.district ?: "null_district" }.map { (district, items) ->
@@ -190,16 +195,12 @@ class DeliveryOrderRepository(
                     district = actualDistrict,
                     totalQuantity = items.sumOf { it.quantity },
                     totalDeliveredQuantity = items.sumOf { it.deliveredQuantity },
-//                    status = items.firstOrNull()?.status ?: "",
                     deliveryOrderItems = items
                 )
             }
 
             val grandTotalQuantity = updatedDeliveryOrderItems.sumOf { it.quantity }
-            val grandTotalDeliveredQuantity = updatedDeliveryOrderItems.sumOf { item ->
-                item.associatedDeliveryChallanItems.sumOf { it.deliveringQuantity }
-            }
-
+            val grandTotalDeliveredQuantity = updatedDeliveryOrderItems.sumOf { it.deliveredQuantity }
 
             return deliveryOrder.copy(
                 deliveryOrderSections = sections,
@@ -211,6 +212,9 @@ class DeliveryOrderRepository(
             throw ex
         }
     }
+
+
+
 
     fun create(order: deliveryorder): deliveryorder {
         try {

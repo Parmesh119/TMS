@@ -242,7 +242,7 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
         COALESCE(SUM(CASE 
             WHEN dc.status = 'delivered' THEN dci_sub.deliveringquantity 
             ELSE 0
-        END), 0) AS delivered_quantity
+        END), 0) AS deliveredQuantity
     FROM 
         deliverychallanitem dci
     JOIN 
@@ -274,7 +274,8 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
                     quantity = rs.getDouble("quantity"),
                     rate = rs.getDouble("rate"),
                     dueDate = rs.getLong("duedate"),
-                    deliveringQuantity = rs.getDouble("deliveringquantity")
+                    deliveringQuantity = rs.getDouble("deliveringquantity"),
+                    deliveredQuantity = rs.getDouble("deliveredquantity")
                 )
             }, id)
         } catch (ex: Exception) {
