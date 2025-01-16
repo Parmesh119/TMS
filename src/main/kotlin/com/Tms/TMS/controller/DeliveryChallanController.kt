@@ -52,4 +52,9 @@ class DeliveryChallanController(private val deliveryChallanService: DeliveryChal
             )
         )
     }
+    @DeleteMapping("/cancel/{id}")
+    fun cancelDeliveryChallan(@PathVariable id: String): ResponseEntity<Void> {
+        deliveryChallanService.cancelDeliveryChallan(id)
+        return ResponseEntity.noContent().build()
+    }
 }

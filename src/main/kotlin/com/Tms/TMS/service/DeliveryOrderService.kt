@@ -423,4 +423,8 @@ class DeliveryOrderService(
         // Auto-size columns
         (0..6).forEach { sheet.autoSizeColumn(it) }
     }
+
+    fun fetchPendingDeliveryOrderItems(page: Int, size: Int): MutableList<deliveryOrderItems> {
+        return deliveryOrderRepository.fetchPendingDeliveryOrderItems(page=page, size=size)
+    }
 }

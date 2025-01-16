@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS DeliveryOrder (
 
 CREATE TABLE IF NOT EXISTS DeliveryOrderItem (
     id VARCHAR(255)  PRIMARY KEY,
-    do_number VARCHAR(255)  NOT NULL, -- Changed from 'deliveryOrderId' to 'do_number'
+    do_number VARCHAR(255)  NOT NULL,
     district TEXT,
     taluka TEXT,
     locationId TEXT,

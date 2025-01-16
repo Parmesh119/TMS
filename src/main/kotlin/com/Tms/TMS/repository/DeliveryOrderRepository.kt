@@ -39,7 +39,6 @@ class DeliveryOrderRepository(
             materialId = rs.getString("materialId"),
             quantity = rs.getDouble("quantity"),
             rate = rs.getDouble("rate"),
-            unit = rs.getString("unit"),
             dueDate = rs.getLong("dueDate"),
         )
     }
@@ -283,8 +282,8 @@ class DeliveryOrderRepository(
             id = rs.getString("id"),
             district = rs.getString("district"),
             taluka = rs.getString("taluka"),
-            locationName = rs.getString("locationName"),
-            materialName = rs.getString("materialName"),
+            locationName = rs.getString("location_mame"),
+            materialName = rs.getString("material_name"),
             quantity = rs.getDouble("quantity"),
             rate = rs.getDouble("rate"),
             dueDate = rs.getLong("duedate"),
@@ -332,7 +331,7 @@ class DeliveryOrderRepository(
                 materialName = rs.getString("materialName"),
                 quantity = rs.getDouble("quantity"),
                 rate = rs.getDouble("rate"),
-                dueDate = rs.getLong("dueDate"),
+                dueDate = rs.getLong("duedate"),
                 deliveredQuantity = rs.getDouble("deliveredQuantity")
             )
         }, deliveryOrderId)
@@ -523,5 +522,31 @@ class DeliveryOrderRepository(
         }, dcNumber)
 
         return challan.copy(items = items)
+    }
+
+    fun fetchPendingDeliveryOrderItems(
+        page: Int,
+        size: Int
+    ): MutableList<deliveryOrderItems> {
+        val offset = (page - 1) * size
+        val sql = """
+        SELECT doi.id, doi.do_number, doi.district, doi.taluka, doi.locationid, doi.materialid, doi.quantity,
+            doi.rate, doi.duedate, COALESCE(SUM(CASE WHEN dc.status = 'delivered' THEN dci.deliveringquantity ELSE 0 END), 0) AS delivered_quantity
+        FROM deliveryorderitem doi
+        INNER JOIN deliveryorder dord ON doi.do_number = dord.do_number
+        LEFT JOIN deliverychallanitem dci ON doi.id = dci.deliveryorderitemid
+        LEFT JOIN deliverychallan dc ON dci.dc_number = dc.dc_number
+        WHERE dord.status = 'pending'
+        GROUP BY doi.id, doi.do_number, doi.district, doi.taluka, doi.locationid, doi.materialid, doi.quantity, doi.rate, doi.duedate
+        HAVING doi.quantity > COALESCE(SUM(CASE WHEN dc.status = 'delivered' THEN dci.deliveringquantity ELSE 0 END), 0)
+        ORDER BY doi.duedate ASC
+        LIMIT ? OFFSET ?
+    """.trimIndent()
+        return jdbcTemplate.query(
+            sql,
+            deliveryOrderItemRowMapper,
+            size,
+            offset
+        )
     }
 }

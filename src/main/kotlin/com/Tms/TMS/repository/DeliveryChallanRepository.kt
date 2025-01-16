@@ -159,12 +159,15 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
                 total += item.quantity
             }
 
+        if(deliveryChallan.status != "cancelled") {
             if(grandtotal == total) {
                 updateStatus(deliveryChallan.deliveryOrderId!!, "delivered")
             } else {
                 updateStatus(deliveryChallan.deliveryOrderId!!, "pending")
             }
-
+        } else {
+            updateStatus(deliveryChallan.deliveryOrderId!!, "cancelled")
+        }
             // 6. Return updated challan
             return findById(deliveryChallan.id)
                 ?: throw Exception("Failed to retrieve updated delivery challan")
@@ -230,7 +233,7 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
             val sql = """
                 SELECT 
                     dc.*, 
-                    p.name AS partyName  -- Match model field
+                    p.name AS partyName 
                 FROM 
                     deliverychallan AS dc
                 LEFT JOIN 

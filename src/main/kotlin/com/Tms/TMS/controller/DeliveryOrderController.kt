@@ -1,9 +1,6 @@
 package com.Tms.TMS.controller
 
-import com.Tms.TMS.model.DeliverOrderItemMetadata
-import com.Tms.TMS.model.ListDeliveryOrderItem
-import com.Tms.TMS.model.deliveryOrderInput
-import com.Tms.TMS.model.deliveryorder
+import com.Tms.TMS.model.*
 import com.Tms.TMS.service.DeliveryOrderService
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -116,15 +113,14 @@ class DeliveryOrderController(private val deliveryOrderService: DeliveryOrderSer
         }
 
         // Create a file in the exports folder with filename according to do number
-        val fileName = "DO_${do_number}_all_files.xlsx"
+        val fileName = "${do_number}.xlsx"
         val filePath = exportsDir.resolve(fileName)
 
         try {
             filePath.writeBytes(fileBytes)
-            println("File Saved Successfully at: ${filePath.absolutePath}")
         } catch (e: Exception) {
             // Handle file writing error properly (log it, etc)
-            println("Error Saving file: ${e.message}")
+            throw e
         }
 
         return ResponseEntity.ok()
@@ -132,5 +128,14 @@ class DeliveryOrderController(private val deliveryOrderService: DeliveryOrderSer
                 "attachment; filename=$fileName")
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .body(fileBytes)
+    }
+    @PostMapping("/list/pending-delivery-order-items")
+    fun listPendingDeliveryOrderItems(
+        @RequestBody listPendingDeliveryOrderItemInput: ListPendingDeliveryOrderItemInput
+    ): ResponseEntity<MutableList<deliveryOrderItems>> {
+        return ResponseEntity.ok(deliveryOrderService.fetchPendingDeliveryOrderItems(
+            page = listPendingDeliveryOrderItemInput.page,
+            size = listPendingDeliveryOrderItemInput.size)
+        )
     }
 }

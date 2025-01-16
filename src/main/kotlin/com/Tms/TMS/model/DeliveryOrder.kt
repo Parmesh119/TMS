@@ -1,5 +1,6 @@
 package com.Tms.TMS.model
 
+import java.math.BigInteger
 import java.time.LocalDateTime
 import java.util.*
 
@@ -33,7 +34,7 @@ data class deliveryOrderItems (
     val quantity: Double = 0.0,
     val deliveredQuantity: Double = 0.0,
     val rate: Double = 0.0,
-    val unit: String?,
+    val unit: String? = null,
     val dueDate: Long?,
     val associatedDeliveryChallanItems: List<AssociatedDeliverChallanItemMetadata> = emptyList()
 )
@@ -125,4 +126,9 @@ data class DeliveryChallanItemExportData(
     val materialName: String?,
     val deliveringQuantity: Double,
     val rate: Double
+)
+
+data class ListPendingDeliveryOrderItemInput(
+    val page: Int,
+    val size: Int,
 )

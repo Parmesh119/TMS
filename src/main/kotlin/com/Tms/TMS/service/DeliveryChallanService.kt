@@ -153,4 +153,20 @@ class DeliveryChallanService(private val deliveryChallanRepository: DeliveryChal
             )
         }
     }
+
+    fun cancelDeliveryChallan(id: String): DeliveryChallan {
+        val deliveryChallan = deliveryChallanRepository.findById(id)
+        if (deliveryChallan == null || deliveryChallan.deliveryOrderId == null) {
+            throw IllegalArgumentException("Invalid delivery challan")
+        }
+
+        val deliveryOrder = deliveryOrderRepository.findById(deliveryChallan.deliveryOrderId) ?: throw IllegalArgumentException("Invalid delivery order")
+        if (deliveryOrder.status == "completed") {
+            throw IllegalArgumentException("Cannot cancel delivery challan as delivery order is completed")
+        }
+
+        val deliveryChallanToUpdate = deliveryChallan.copy(status = "cancelled", updated_at = Instant.now().epochSecond)
+        deliveryChallanRepository.update(deliveryChallanToUpdate)
+        return deliveryChallanToUpdate
+    }
 }
