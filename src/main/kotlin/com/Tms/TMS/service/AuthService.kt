@@ -27,7 +27,7 @@ class AuthService (
     private val authRepository: AuthRepository,
     private val passwordEncoder: PasswordEncoder,
 ) {
-    private val realm = "master"
+    private val realm = "TMS"
 
     @Value("\${keycloak.auth-server-url}")
     private val authServerUrl: String? = null
@@ -78,7 +78,6 @@ class AuthService (
 
 //            val user = authRepository.findByUsername(username) ?: throw UsernameNotFoundException("user not found $username")
 //            authRepository.update(user)
-            println(response)
             val responseBody = response.body
             if (responseBody == null || !responseBody.containsKey("access_token")) {
                 throw RuntimeException("Failed to get access token")
@@ -89,19 +88,40 @@ class AuthService (
             throw RuntimeException("Login failed", e)
         }
     }
-//    fun refresh(refreshToken: String): AuthResponse? {
-//        val username = jwtUtil.extractUsername(refreshToken)     //the jwt refresh token in Header.Payload.Signature format so from the payload the username is extracted
-//        val userDetails = userDetailsService.loadUserByUsername(username)
-//        val user = authRepository.findByUsername(username) ?: throw UsernameNotFoundException("user not found: $username")
-//        if (user.refreshToken == refreshToken ) { //matches the refresher token and assignes new tokens
-//            val newAccessToken = jwtUtil.generateAccessToken(userDetails)
-//            val newRefreshToken = jwtUtil.generateRefreshToken(userDetails)
-//            user.refreshToken = newRefreshToken
-//            authRepository.save(user)
-//            return AuthResponse(accessToken = newAccessToken, refreshToken = newRefreshToken)
-//        }
-//        return null
-//    }
+    fun refresh(refreshToken: String): AuthResponse? {
+        // Handles token refresh.
+        try {
+            val restTemplate = RestTemplate()
+
+            val tokenUrl = "$authServerUrl/realms/$realm/protocol/openid-connect/token"
+
+            val headers = org.springframework.http.HttpHeaders()
+            headers["Content-Type"] = "application/x-www-form-urlencoded"
+
+            val body = "grant_type=refresh_token" +
+                    "&client_id=" + clientId +
+                    "&client_secret=" + clientSecret +
+                    "&refresh_token=" + refreshToken
+
+            val entity = org.springframework.http.HttpEntity(body, headers)
+
+            val response: ResponseEntity<MutableMap<String, Any>> = restTemplate.exchange(
+                tokenUrl,
+                HttpMethod.POST,
+                entity,
+                object: ParameterizedTypeReference<MutableMap<String, Any>>() {}
+            )
+
+            val responseBody = response.body
+            if (responseBody == null || !responseBody.containsKey("access_token")) {
+                throw RuntimeException("Failed to get access token")
+            }
+
+            return AuthResponse(responseBody["access_token"].toString(), responseBody["refresh_token"].toString())
+        } catch (e: Exception) {
+            throw RuntimeException("Refresh failed", e)
+        }
+    }
 
     fun generateRandomPassword(length: Int): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#\$%^&*()-_=+<>?/"

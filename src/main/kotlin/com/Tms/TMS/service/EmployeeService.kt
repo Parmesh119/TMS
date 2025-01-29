@@ -68,7 +68,6 @@ class EmployeeService(
             val password: String = (1..6)
                 .map { characters[Random.nextInt(characters.length)] }
                 .joinToString("")
-            println(password)
 
         val createUser = RegisterRequest(
             username = employee.email,
@@ -165,7 +164,7 @@ class EmployeeService(
     }
 
     fun getIdByUsername(username: String, headers: HttpHeaders): String? {
-        val keycloakBaseUrl = "http://localhost:8080/admin/realms/master" // Change as needed
+        val keycloakBaseUrl = "http://localhost:8080/admin/realms/TMS" // Change as needed
         val restTemplate = RestTemplate()
 
         val url = "$keycloakBaseUrl/users?username=$username"
@@ -277,25 +276,103 @@ class EmployeeService(
         }
     }
 
-    fun deleteEmployee(id: String): Boolean {
-        return employeeRepository.deleteEmployee(id)
+    fun deleteEmployee(id: String, headers: HttpHeaders): Boolean {
+        headers.contentType = MediaType.APPLICATION_JSON
+
+        val username = employeeRepository.getEmployeeById(id)?.email
+        val keycloak_id = username?.let { getIdByUsername(it, headers) }
+
+        val response = restTemplate.exchange(
+            "$adminBaseUrl/users/$keycloak_id",
+            HttpMethod.DELETE,
+            HttpEntity<Void>(headers),
+            String::class.java
+        )
+
+        if(response.statusCode.is2xxSuccessful) {
+            return employeeRepository.deleteEmployee(id)
+        }
+        throw Exception("Failed to delete employee")
     }
 
-    fun deactivateEmployee(id: String): Employee {
+    fun deactivateEmployee(id: String, headers: HttpHeaders): Employee {
         val employee = employeeRepository.getEmployeeById(id) ?: throw ChangeSetPersister.NotFoundException()
-        if (employee.status == "inactive") {
+
+        if (employee.status != "inactive") {
             throw IllegalStateException("Employee is already inactive")
         }
-        val res = employeeRepository.deactivateEmployee(id)
-        if(res.status == "inactive") {
-            val response = authRepository.findByEmail(employee.email) ?: throw Exception("Failed to deactivate employee")
-            if (response != null) {
-                return employee
+
+        headers.contentType = MediaType.APPLICATION_JSON
+        val username = employeeRepository.getEmployeeById(id)?.email
+        val keycloak_id = username?.let { getIdByUsername(it, headers) }
+
+        val keycloakUpdate = keycloak_id?.let {
+            deactivationDTO (
+                id = it,
+                enabled = false,
+            )
+        }
+
+        val response = restTemplate.exchange(
+            "$adminBaseUrl/users/$keycloak_id",
+            HttpMethod.PUT,
+            HttpEntity(keycloakUpdate, headers),
+            String::class.java
+        )
+
+        if(response.statusCode.is2xxSuccessful) {
+            val res = employeeRepository.deactivateEmployee(id)
+            if(res.status == "inactive") {
+                val response = authRepository.findByEmail(employee.email) ?: throw Exception("Failed to deactivate employee")
+                if (response != null) {
+                    return employee
+                } else {
+                    throw Exception("Failed to delete user")
+                }
             } else {
-                throw Exception("Failed to delete user")
+                throw Exception("Failed to deactivate employee")
             }
+        }
+        throw Exception("Failed to deactivate employee")
+    }
+
+    fun sendResetPasswordEmail(email: String, headers: HttpHeaders): String {
+        val keycloak_id = getKeycloakUserById(email, headers).id
+        val actions = listOf("UPDATE_PASSWORD")
+
+        val request = HttpEntity(actions, headers)
+        val response = restTemplate.exchange(
+            "$adminBaseUrl/users/$keycloak_id/execute-actions-email",
+            HttpMethod.PUT,
+            request,
+            String::class.java
+        )
+
+        if(response.statusCode.is2xxSuccessful) {
+            return "Email Sent"
+        }
+        throw Exception("Failed to send reset password email")
+    }
+
+    fun resetPassword(password: String, confirmPassword: String, temporary: Boolean, email: String, headers: HttpHeaders): String {
+        val keycloakId = getKeycloakUserById(email, headers).id
+        val credentialRepresentation = CredentialRepresentation().apply {
+            type = "password"
+            value = password
+            isTemporary = temporary
+        }
+        val request = HttpEntity(credentialRepresentation, headers)  // Remove the listOf()
+
+        val response = restTemplate.exchange(
+            "$adminBaseUrl/users/$keycloakId/reset-password",
+            HttpMethod.PUT,
+            request,
+            String::class.java
+        )
+        return if (response.statusCode.is2xxSuccessful) {
+            "Password reset successful"
         } else {
-            throw Exception("Failed to deactivate employee")
+            throw Exception("Failed to reset password")
         }
     }
 }

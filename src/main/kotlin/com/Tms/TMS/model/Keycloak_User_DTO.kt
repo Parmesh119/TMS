@@ -43,3 +43,24 @@ data class UserUpdateDTO(
     val clientRoles: Map<String, List<String>>? = null,
     val attributes: List<AttributeDTO>? = null,
 )
+
+data class deactivationDTO(
+    val id: String,
+    val enabled: Boolean? = true
+)
+
+data class EmailRequest (
+    val email: String
+)
+
+data class ResetPasswordDTO(
+    val redirectUri: String,
+    val clientId: String
+)
+
+data class PasswordResetRequest (
+    val email: String,
+    val password: String? = "1234",
+    val confirmPassword: String? = "1234",
+    val temporary: Boolean? = false
+)

@@ -1,9 +1,6 @@
 package com.Tms.TMS.controller
 
-import com.Tms.TMS.model.Employee
-import com.Tms.TMS.model.EmployeeListRequest
-import com.Tms.TMS.model.Keycloak_User_DTO
-import com.Tms.TMS.model.UserUpdateDTO
+import com.Tms.TMS.model.*
 import com.Tms.TMS.service.EmailService
 import com.Tms.TMS.service.EmployeeService
 import com.Tms.TMS.service.GenerateAccessToken
@@ -79,11 +76,54 @@ class EmployeeController(
     // delete employee
     @DeleteMapping("/delete/{id}")
     fun deleteEmployee(@PathVariable id: String): Boolean {
-        return employeeService.deleteEmployee(id)
+        val token = GenerateAccessToken.getAccessTokenFromOpenID()
+        val headers = GenerateAccessToken.createHeaders(token)
+        return employeeService.deleteEmployee(id, headers)
     }
 
     @GetMapping("/deactivate/{id}")
     fun deactivateEmployee(@PathVariable id: String): ResponseEntity<Employee> {
-        return ResponseEntity.ok(employeeService.deactivateEmployee(id))
+        val token = GenerateAccessToken.getAccessTokenFromOpenID()
+        val headers = GenerateAccessToken.createHeaders(token)
+
+        return ResponseEntity.ok(employeeService.deactivateEmployee(id, headers))
+    }
+
+    @PostMapping("/reset-password/send-mail")
+    fun sendResetPasswordEmail(@RequestBody emailRequest: EmailRequest): ResponseEntity<String> {
+        return try {
+            val accessToken = GenerateAccessToken.getAccessTokenFromOpenID()
+            val headers = GenerateAccessToken.createHeaders(accessToken)
+            val response = employeeService.sendResetPasswordEmail(emailRequest.email, headers)
+            ResponseEntity.ok(response)
+        } catch (e: Exception) {
+            ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body("Unauthorized access")
+        }
+    }
+
+    @PostMapping("/reset-password")
+    fun resetPassword(@RequestBody passwordResetRequest: PasswordResetRequest): ResponseEntity<String> {
+        return try {
+            if(passwordResetRequest.password != passwordResetRequest.confirmPassword) {
+                return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Passwords do not match")
+            }
+            val accessToken = GenerateAccessToken.getAccessTokenFromOpenID()
+            val headers = GenerateAccessToken.createHeaders(accessToken)
+            val response = passwordResetRequest.password?.let { passwordResetRequest.confirmPassword?.let { it1 ->
+                passwordResetRequest.temporary?.let { it2 ->
+                    employeeService.resetPassword(it,
+                        it1, it2, passwordResetRequest.email, headers)
+                }
+            } }
+            ResponseEntity.ok(response)
+        } catch (e: Exception) {
+            ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body("Unauthorized access")
+        }
     }
 }

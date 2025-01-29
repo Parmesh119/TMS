@@ -54,7 +54,7 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers("/api/v1/public/**").permitAll()
-                    .requestMatchers("/api/v1/users/list", "/api/v1/employees/update").hasRole("default-roles-tms")
+                    .requestMatchers("/api/v1/users/**", "/api/v1/employees/**").hasRole("default-roles-tms")
                     .requestMatchers("/api/v1/auth/**").permitAll()
                     .anyRequest().authenticated()
             }
