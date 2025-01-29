@@ -1,18 +1,28 @@
 package com.Tms.TMS.service
 
-import com.Tms.TMS.model.Employee
-import com.Tms.TMS.model.RegisterRequest
+import com.Tms.TMS.model.*
 import com.Tms.TMS.repository.AuthRepository
 import com.Tms.TMS.repository.EmployeeRepository
+import org.keycloak.representations.idm.ClientRepresentation
+import org.keycloak.representations.idm.CredentialRepresentation
+import org.keycloak.representations.idm.RoleRepresentation
+import org.keycloak.representations.idm.UserRepresentation
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.crossstore.ChangeSetPersister
+import org.springframework.http.*
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.client.RestTemplate
+import kotlin.random.Random
 
 @Service
 class EmployeeService(
     private val employeeRepository: EmployeeRepository,
     private val authService: AuthService,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val restTemplate: RestTemplate,
+    private val emailService: EmailService,
 ) {
 
     fun getAllEmployee(
@@ -25,36 +35,243 @@ class EmployeeService(
         return employeeRepository.getAllEmployee(search, roles, status, page, size)
     }
 
-    fun getEmployeeById(id: String): Employee {
+    private val realm = "TMS"
+    private val adminBaseUrl = "http://localhost:8080/admin/realms/TMS"
+
+    @Value("\${keycloak.auth-server-url}")
+    private val authServerUrl: String? = null
+
+    @Value("\${keycloak.resource}")
+    private val clientId: String? = null
+
+    @Value("\${keycloak.credentials.secret}")
+    private val clientSecret: String? = null
+
+    fun getEmployeeById(id: String, headers: HttpHeaders): Employee {
         return employeeRepository.getEmployeeById(id)?: throw Exception("Employee not found")
     }
 
+    fun getKeycloakUserById (usermame: String, headers: HttpHeaders): UserRepresentation {
+        val response = restTemplate.exchange(
+            "$adminBaseUrl/users?username=$usermame",
+            HttpMethod.GET,
+            HttpEntity<Void>(headers),
+            object : ParameterizedTypeReference<List<UserRepresentation>>() {}
+        )
+        return response.body?.firstOrNull() ?: throw Exception("User not found")
+    }
+
     @Transactional
-    fun createEmployee(employee: Employee): Employee {
-        val password: String = "123456"
+    fun createEmployee(employee: Employee, headers: HttpHeaders, keycloakUserDto: Keycloak_User_DTO): Employee {
+        return try {
+            val characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+            val password: String = (1..6)
+                .map { characters[Random.nextInt(characters.length)] }
+                .joinToString("")
+            println(password)
+
         val createUser = RegisterRequest(
             username = employee.email,
             email = employee.email,
             role = employee.role,
             password = password
         )
-        try {
-            authService.register(createUser)
-            return  employeeRepository.createEmployee(employee)
+
+        val user = UserRepresentation().apply {
+            username = employee.email
+            email = createUser.email
+            firstName = employee.name?: "user"
+            credentials = listOf(
+                CredentialRepresentation().apply {
+                    type = "password"
+                    value = createUser.password
+                    isTemporary = true
+                }
+            )
+            isEnabled = keycloakUserDto.enabled?: true
+            requiredActions = listOf("UPDATE_PASSWORD", "VERIFY_EMAIL")
+
+        }
+
+        val request = HttpEntity(user, headers)
+        val response = restTemplate.postForEntity(
+            "http://localhost:8080/admin/realms/TMS/users",
+            request,
+            String::class.java
+        )
+        if(response.statusCode.isError) {
+            throw RuntimeException("Failed to create user")
+        } else {
+            val userId = extractUserId(response)
+
+            val clientid = getClientByClientId(headers, "Employee")?.id?:throw Exception("Not found")
+
+            val res = employee.role.let {
+                val roleResponse = restTemplate.exchange(
+                    "http://localhost:8080/admin/realms/TMS/clients/$clientid/roles/$it",
+                    HttpMethod.GET,
+                    HttpEntity<Void>(headers),
+                    RoleRepresentation::class.java
+                )
+                roleResponse.body ?: throw RuntimeException("Role not found")
+            }
+
+            val roleRequest = HttpEntity(listOf(res), headers)
+            restTemplate.postForEntity(
+                "http://localhost:8080/admin/realms/TMS/users/$userId/role-mappings/clients/$clientid",
+                roleRequest,
+                Void::class.java
+            )
+            run {
+                authService.register(createUser)
+                employeeRepository.createEmployee(employee)
+                val loginLink = "http://example.com/login"
+                val emailBody = """
+                                Welcome to our app!
+                                    Here are your login details:
+                                    Email: ${employee.email}
+                                    Password: ${password}
+                    
+                    Please log in within 12 hours: $loginLink
+                """.trimIndent()
+                emailService.sendEmail(employee.email, "Welcome to TMS! Your New Account Created", emailBody)
+                return employee
+            }
+        }
         } catch (ex: Exception) {
             print(ex.message)
             throw Exception("Failed to create user")
         }
     }
 
-    fun updateEmployee(id: String, employee: Employee): Employee {
+    fun getClientByClientId(headers: HttpHeaders, clientId: String): ClientRepresentation? {
+        val restTemplate = RestTemplate()
+        val adminBaseUrl = "http://localhost:8080/admin/realms/TMS"
+
+        val responseEntity = restTemplate.exchange(
+            "$adminBaseUrl/clients?clientId=$clientId",
+            HttpMethod.GET,
+            HttpEntity<Void>(headers),
+            Array<ClientRepresentation>::class.java
+        )
+
+        return responseEntity.body?.firstOrNull()
+    }
+
+    fun extractUserId(response: ResponseEntity<String>): String {
+        // Logic to extract userId from the response, e.g., parsing the URL or response body
+        return response.headers.location?.path?.split("/")?.last()
+            ?: throw RuntimeException("User ID extraction failed")
+    }
+
+    fun getIdByUsername(username: String, headers: HttpHeaders): String? {
+        val keycloakBaseUrl = "http://localhost:8080/admin/realms/master" // Change as needed
+        val restTemplate = RestTemplate()
+
+        val url = "$keycloakBaseUrl/users?username=$username"
+
+        val response = restTemplate.exchange(
+            url,
+            HttpMethod.GET,
+            HttpEntity<Void>(headers),
+            object : ParameterizedTypeReference<List<Map<String, Any>>>() {}
+        )
+
+        return response.body?.firstOrNull()?.get("id") as? String
+    }
+
+
+    fun updateEmployee(id: String, employee: Employee, updateDTO: UserUpdateDTO, headers: HttpHeaders): Employee {
         return try {
-            val updatedRows = employeeRepository.updateEmployee(id, employee)?: throw Exception("Employee not found")
-            if(updatedRows > 0) {
-                return employeeRepository.getEmployeeById(id)?: throw Exception("Employee not found")
-            } else {
-                throw Exception("Employee not found")
+            val keycloak_id = updateDTO.username.let { getKeycloakUserById(it, headers) }
+            val existingUser = getEmployeeById(id, headers) ?: throw Exception("Employee not found")
+
+            val user = UserRepresentation().apply {
+                email = updateDTO.email
+                firstName = updateDTO.firstName
+                isEnabled = updateDTO.enabled?: true
+
+                if(updateDTO.credentials != null) {
+                    credentials = updateDTO.credentials.map { credentialDTO ->
+                        CredentialRepresentation().apply {
+                            type = credentialDTO.type
+                            value = credentialDTO.value
+                            isTemporary = credentialDTO.temporary?: true
+                        }
+                    }
+                }
+
+                if (updateDTO.attributes != null) {
+                    for (attribute in updateDTO.attributes) {
+                        val requiredRoles = attribute.required?.roles
+                        if (requiredRoles != null && requiredRoles.isNotEmpty()) {
+                            println("Required roles: $requiredRoles")
+                        }
+                    }
+                }
             }
+            val keycloakId = keycloak_id.id
+            val request = org.springframework.http.HttpEntity(user, headers)
+            val response = restTemplate.exchange(
+                "$adminBaseUrl/users/$keycloakId",
+                org.springframework.http.HttpMethod.PUT,
+                request,
+                object : ParameterizedTypeReference<List<UserRepresentation>>() {}
+            )
+
+            val clientid = getClientByClientId(headers, updateDTO.serviceAccountClientId ?: "Employee")?.id
+                ?: throw RuntimeException("Client not found")
+
+            val res = listOf(employee.role).let { roles -> // Convert role to a List<String>
+                val roleResponse = restTemplate.exchange(
+                    "$adminBaseUrl/users/$keycloakId/role-mappings/clients/$clientid",
+                    HttpMethod.GET,
+                    HttpEntity<Void>(headers),
+                    object : ParameterizedTypeReference<List<RoleRepresentation>>() {}  // Expecting a list
+                )
+
+                val rolesToRemove = roleResponse.body?.filter { role -> role.name !in roles }
+
+                if (!rolesToRemove.isNullOrEmpty()) {
+                    val removeRoleRequest = HttpEntity(rolesToRemove, headers)
+                    restTemplate.exchange(
+                        "$adminBaseUrl/users/$keycloakId/role-mappings/clients/$clientid",
+                        HttpMethod.DELETE,
+                        removeRoleRequest,
+                        Void::class.java
+                    )
+                }
+
+                val roleMappings = roles.map { roleName ->
+                    val roleResponse = restTemplate.exchange(
+                        "$adminBaseUrl/clients/$clientid/roles/$roleName",
+                        HttpMethod.GET,
+                        HttpEntity<Void>(headers),
+                        RoleRepresentation::class.java
+                    )
+                    roleResponse.body ?: throw RuntimeException("Role $roleName not found")
+                }
+
+                val roleRequest = HttpEntity(roleMappings, headers)
+                restTemplate.postForEntity(
+                    "$adminBaseUrl/users/$keycloakId/role-mappings/clients/$clientid",
+                    roleRequest,
+                    String::class.java
+                )
+            }
+
+
+            if(res.statusCode.is2xxSuccessful) {
+                val updatedRows = id.let { employeeRepository.updateEmployee(it, employee) } ?: throw Exception("Employee not found")
+                if(updatedRows > 0) {
+                    employeeRepository.getEmployeeById(id)?: throw Exception("Employee not found")
+                } else {
+                    throw Exception("Employee not found")
+                }
+            } else {
+                throw Exception("Failed to update employee")
+            }
+
         } catch (ex: Exception) {
             throw Exception("Employee not found")
         }

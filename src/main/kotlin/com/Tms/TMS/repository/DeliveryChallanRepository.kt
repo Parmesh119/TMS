@@ -2,13 +2,9 @@ package com.Tms.TMS.repository
 
 import com.Tms.TMS.model.DeliveryChallan
 import com.Tms.TMS.model.DeliveryChallanItems
-import com.Tms.TMS.model.deliveryOrderItems
-import com.Tms.TMS.model.deliveryorder
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.transaction.interceptor.TransactionAspectSupport
-import java.sql.ResultSet
 import java.time.Instant
 import java.time.ZoneId
 import java.util.*
@@ -23,8 +19,8 @@ class DeliveryChallanRepository(private val jdbcTemplate: JdbcTemplate) {
 
     private fun deliveryChallanRowMapper(rs: java.sql.ResultSet): DeliveryChallan {
         return DeliveryChallan(
-            id = rs.getString("dc_number"),  // Changed to dc_number
-            deliveryOrderId = rs.getString("do_number"),  // Changed to do_number
+            id = rs.getString("dc_number"),
+            deliveryOrderId = rs.getString("do_number"),
             status = rs.getString("status"),
             created_at = rs.getLong("created_at"),
             updated_at = rs.getLong("updated_at"),

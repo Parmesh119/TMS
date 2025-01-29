@@ -9,7 +9,7 @@ data class Employee(
     val email: String,
     val contactNumber: String? = null, // Mark as nullable
     val role: String,
-    val status: String
+    val status: String? = "active"
 )
 
 data class EmployeeListRequest(

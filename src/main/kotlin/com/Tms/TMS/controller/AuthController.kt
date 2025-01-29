@@ -17,8 +17,8 @@
             return ResponseEntity.ok(authService.login(loginRequest.email, loginRequest.password))
         }
 
-        @PostMapping("/refresh")
-        fun refresh(@RequestBody refreshToken: String): ResponseEntity<Any> {
-            return ResponseEntity.ok(authService.refresh(refreshToken))
-        }
+//        @PostMapping("/refresh")
+//        fun refresh(@RequestBody refreshToken: String): ResponseEntity<Any> {
+//            return ResponseEntity.ok(authService.refresh(refreshToken))
+//        }
     }
