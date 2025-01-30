@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
@@ -50,11 +51,12 @@ class SecurityConfig(
         val jwtConverter = jwtAuthenticationConverter()
 
         return http
-            .csrf { it.disable() }
+            .cors(Customizer.withDefaults())
+            .csrf { csrf -> csrf.disable() }
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers("/api/v1/public/**").permitAll()
-                    .requestMatchers("/api/v1/users/**", "/api/v1/employees/**").hasRole("ADMIN")
+                    .requestMatchers( "/api/v1/employees/**").hasRole("ADMIN")
                     .requestMatchers("/api/v1/auth/**").permitAll()
                     .anyRequest().authenticated()
             }

@@ -302,7 +302,7 @@ class EmployeeService(
     fun deactivateEmployee(id: String, headers: HttpHeaders): Employee {
         val employee = employeeRepository.getEmployeeById(id) ?: throw ChangeSetPersister.NotFoundException()
 
-        if (employee.status != "inactive") {
+        if (employee.status == "inactive") {
             throw IllegalStateException("Employee is already inactive")
         }
 

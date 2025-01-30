@@ -17,6 +17,7 @@ class EmployeeController(
     private val GenerateAccessToken: GenerateAccessToken
 ) {
 
+
     // List of all employee
     @PostMapping("/list")
     fun getEmployee(@RequestBody employeeListRequest: EmployeeListRequest): ResponseEntity<List<Employee>> {
