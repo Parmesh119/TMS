@@ -53,11 +53,6 @@ data class EmailRequest (
     val email: String
 )
 
-data class ResetPasswordDTO(
-    val redirectUri: String,
-    val clientId: String
-)
-
 data class PasswordResetRequest (
     val email: String,
     val password: String? = "1234",
@@ -66,5 +61,5 @@ data class PasswordResetRequest (
 )
 
 data class RefreshRequest(
-    val refresh_token: String
+    val refreshToken: String
 )

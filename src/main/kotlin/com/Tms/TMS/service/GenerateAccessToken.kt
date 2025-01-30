@@ -1,6 +1,7 @@
 package com.Tms.TMS.service
 
 import org.keycloak.representations.idm.ClientRepresentation
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.*
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
@@ -10,14 +11,24 @@ import org.springframework.web.client.RestTemplate
 @Service
 class GenerateAccessToken {
 
+    @Value("\${keycloak.auth-server-url}")
+    private val authServerUrl: String? = null
+
+    @Value("\${keycloak.resource}")
+    private val clientId: String? = null
+
+    @Value("\${keycloak.credentials.secret}")
+    private val clientSecret: String? = null
+
+
     fun getAccessTokenFromOpenID(): String {
         val restTemplate = RestTemplate()
 
         // Prepare form data
         val map: MultiValueMap<String, String> = LinkedMultiValueMap()
         map.add("grant_type", "client_credentials")
-        map.add("client_id", "Employee")
-        map.add("client_secret", "uw797lsoQ1AKXenThPpDrQ1ImwfUXEL5")
+        map.add("client_id", clientId)
+        map.add("client_secret", clientSecret)
 
         // Set headers
         val headers = HttpHeaders()
@@ -27,7 +38,7 @@ class GenerateAccessToken {
 
         // Send POST request
         val response = restTemplate.exchange(
-            "http://localhost:8080/realms/TMS/protocol/openid-connect/token",  // Replace with the actual URL
+            "$authServerUrl/realms/TMS/protocol/openid-connect/token",  // Replace with the actual URL
             HttpMethod.POST,  // HTTP Method
             entity,  // Request entity with data and headers
             Map::class.java
@@ -41,19 +52,5 @@ class GenerateAccessToken {
             set("Authorization", "Bearer $token")
             contentType = MediaType.APPLICATION_JSON
         }
-    }
-
-    fun getClientByClientId(headers: HttpHeaders, clientId: String): ClientRepresentation? {
-        val restTemplate = RestTemplate()
-        val adminBaseUrl = "http://localhost:8080/admin/realms/TMS"
-
-        val responseEntity = restTemplate.exchange(
-            "$adminBaseUrl/clients?clientId=$clientId",
-            HttpMethod.GET,
-            HttpEntity<Void>(headers),
-            Array<ClientRepresentation>::class.java
-        )
-
-        return responseEntity.body?.firstOrNull()
     }
 }

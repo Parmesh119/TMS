@@ -21,6 +21,6 @@
 
         @PostMapping("/refresh")
         fun refresh(@RequestBody refreshRequest: RefreshRequest): ResponseEntity<Any> {
-            return ResponseEntity.ok(authService.refresh(refreshRequest.refresh_token))
+            return ResponseEntity.ok(authService.refresh(refreshRequest.refreshToken))
         }
     }

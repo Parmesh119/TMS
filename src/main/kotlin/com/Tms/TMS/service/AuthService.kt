@@ -77,8 +77,6 @@ class AuthService (
                 object: ParameterizedTypeReference<MutableMap<String, Any>>() {}
             )
 
-//            val user = authRepository.findByUsername(username) ?: throw UsernameNotFoundException("user not found $username")
-//            authRepository.update(user)
             val responseBody = response.body
             if (responseBody == null || !responseBody.containsKey("access_token")) {
                 throw RuntimeException("Failed to get access token")
@@ -124,17 +122,5 @@ class AuthService (
         } catch (e: Exception) {
             throw RuntimeException("Refresh failed", e)
         }
-    }
-
-    fun generateRandomPassword(length: Int): String {
-        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#\$%^&*()-_=+<>?/"
-        val random = SecureRandom()
-        val password = StringBuilder()
-
-        for (i in 0 until length) {
-            val randomIndex = random.nextInt(chars.length)
-            password.append(chars[randomIndex])
-        }
-        return password.toString()
     }
 }

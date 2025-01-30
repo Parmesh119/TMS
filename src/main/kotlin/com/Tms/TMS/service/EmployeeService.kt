@@ -25,18 +25,8 @@ class EmployeeService(
     private val emailService: EmailService,
 ) {
 
-    fun getAllEmployee(
-        search: String,
-        roles: List<String>,
-        status: List<String>,
-        page: Int,
-        size: Int
-    ): List<Employee> {
-        return employeeRepository.getAllEmployee(search, roles, status, page, size)
-    }
-
     private val realm = "TMS"
-    private val adminBaseUrl = "http://localhost:8080/admin/realms/TMS"
+//    private val adminBaseUrl = "http://localhost:8080/admin/realms/TMS"
 
     @Value("\${keycloak.auth-server-url}")
     private val authServerUrl: String? = null
@@ -47,13 +37,24 @@ class EmployeeService(
     @Value("\${keycloak.credentials.secret}")
     private val clientSecret: String? = null
 
+
+    fun getAllEmployee(
+        search: String,
+        roles: List<String>,
+        status: List<String>,
+        page: Int,
+        size: Int
+    ): List<Employee> {
+        return employeeRepository.getAllEmployee(search, roles, status, page, size)
+    }
+
     fun getEmployeeById(id: String, headers: HttpHeaders): Employee {
         return employeeRepository.getEmployeeById(id)?: throw Exception("Employee not found")
     }
 
     fun getKeycloakUserById (usermame: String, headers: HttpHeaders): UserRepresentation {
         val response = restTemplate.exchange(
-            "$adminBaseUrl/users?username=$usermame",
+            "${authServerUrl}/admin/realms/TMS/users?username=$usermame",
             HttpMethod.GET,
             HttpEntity<Void>(headers),
             object : ParameterizedTypeReference<List<UserRepresentation>>() {}
@@ -94,7 +95,7 @@ class EmployeeService(
 
         val request = HttpEntity(user, headers)
         val response = restTemplate.postForEntity(
-            "http://localhost:8080/admin/realms/TMS/users",
+            "$authServerUrl/admin/realms/TMS/users",
             request,
             String::class.java
         )
@@ -107,7 +108,7 @@ class EmployeeService(
 
             val res = employee.role.let {
                 val roleResponse = restTemplate.exchange(
-                    "http://localhost:8080/admin/realms/TMS/clients/$clientid/roles/$it",
+                    "$authServerUrl/admin/realms/TMS/clients/$clientid/roles/$it",
                     HttpMethod.GET,
                     HttpEntity<Void>(headers),
                     RoleRepresentation::class.java
@@ -117,7 +118,7 @@ class EmployeeService(
 
             val roleRequest = HttpEntity(listOf(res), headers)
             val response_role = restTemplate.postForEntity(
-                "http://localhost:8080/admin/realms/TMS/users/$userId/role-mappings/clients/$clientid",
+                "$authServerUrl/admin/realms/TMS/users/$userId/role-mappings/clients/$clientid",
                 roleRequest,
                 Void::class.java
             )
@@ -147,10 +148,9 @@ class EmployeeService(
 
     fun getClientByClientId(headers: HttpHeaders, clientId: String): ClientRepresentation? {
         val restTemplate = RestTemplate()
-        val adminBaseUrl = "http://localhost:8080/admin/realms/TMS"
 
         val responseEntity = restTemplate.exchange(
-            "$adminBaseUrl/clients?clientId=$clientId",
+            "$authServerUrl/admin/realms/TMS/clients?clientId=$clientId",
             HttpMethod.GET,
             HttpEntity<Void>(headers),
             Array<ClientRepresentation>::class.java
@@ -166,10 +166,9 @@ class EmployeeService(
     }
 
     fun getIdByUsername(username: String, headers: HttpHeaders): String? {
-        val keycloakBaseUrl = "http://localhost:8080/admin/realms/TMS" // Change as needed
         val restTemplate = RestTemplate()
 
-        val url = "$keycloakBaseUrl/users?username=$username"
+        val url = "$authServerUrl/admin/realms/TMS/users?username=$username"
 
         val response = restTemplate.exchange(
             url,
@@ -214,7 +213,7 @@ class EmployeeService(
             val keycloakId = keycloak_id.id
             val request = org.springframework.http.HttpEntity(user, headers)
             val response = restTemplate.exchange(
-                "$adminBaseUrl/users/$keycloakId",
+                "$authServerUrl/admin/realms/TMS/users/$keycloakId",
                 org.springframework.http.HttpMethod.PUT,
                 request,
                 object : ParameterizedTypeReference<List<UserRepresentation>>() {}
@@ -225,7 +224,7 @@ class EmployeeService(
 
             val res = listOf(employee.role).let { roles -> // Convert role to a List<String>
                 val roleResponse = restTemplate.exchange(
-                    "$adminBaseUrl/users/$keycloakId/role-mappings/clients/$clientid",
+                    "$authServerUrl/admin/realms/TMS//users/$keycloakId/role-mappings/clients/$clientid",
                     HttpMethod.GET,
                     HttpEntity<Void>(headers),
                     object : ParameterizedTypeReference<List<RoleRepresentation>>() {}  // Expecting a list
@@ -236,7 +235,7 @@ class EmployeeService(
                 if (!rolesToRemove.isNullOrEmpty()) {
                     val removeRoleRequest = HttpEntity(rolesToRemove, headers)
                     restTemplate.exchange(
-                        "$adminBaseUrl/users/$keycloakId/role-mappings/clients/$clientid",
+                        "$authServerUrl/admin/realms/TMS/users/$keycloakId/role-mappings/clients/$clientid",
                         HttpMethod.DELETE,
                         removeRoleRequest,
                         Void::class.java
@@ -245,7 +244,7 @@ class EmployeeService(
 
                 val roleMappings = roles.map { roleName ->
                     val roleResponse = restTemplate.exchange(
-                        "$adminBaseUrl/clients/$clientid/roles/$roleName",
+                        "$authServerUrl/admin/realms/TMS/clients/$clientid/roles/$roleName",
                         HttpMethod.GET,
                         HttpEntity<Void>(headers),
                         RoleRepresentation::class.java
@@ -255,7 +254,7 @@ class EmployeeService(
 
                 val roleRequest = HttpEntity(roleMappings, headers)
                 restTemplate.postForEntity(
-                    "$adminBaseUrl/users/$keycloakId/role-mappings/clients/$clientid",
+                    "$authServerUrl/admin/realms/TMS/users/$keycloakId/role-mappings/clients/$clientid",
                     roleRequest,
                     String::class.java
                 )
@@ -287,7 +286,7 @@ class EmployeeService(
             throw Exception("Employee not found")
         }
         val response = restTemplate.exchange(
-            "$adminBaseUrl/users/$keycloak_id",
+            "$authServerUrl/admin/realms/TMS/users/$keycloak_id",
             HttpMethod.DELETE,
             HttpEntity<Void>(headers),
             String::class.java
@@ -318,7 +317,7 @@ class EmployeeService(
         }
 
         val response = restTemplate.exchange(
-            "$adminBaseUrl/users/$keycloak_id",
+            "$authServerUrl/admin/realms/TMS/users/$keycloak_id",
             HttpMethod.PUT,
             HttpEntity(keycloakUpdate, headers),
             String::class.java
@@ -346,7 +345,7 @@ class EmployeeService(
 
         val request = HttpEntity(actions, headers)
         val response = restTemplate.exchange(
-            "$adminBaseUrl/users/$keycloak_id/execute-actions-email",
+            "$authServerUrl/admin/realms/TMS/users/$keycloak_id/execute-actions-email",
             HttpMethod.PUT,
             request,
             String::class.java
@@ -368,7 +367,7 @@ class EmployeeService(
         val request = HttpEntity(credentialRepresentation, headers)  // Remove the listOf()
 
         val response = restTemplate.exchange(
-            "$adminBaseUrl/users/$keycloakId/reset-password",
+            "$authServerUrl/admin/realms/TMS/users/$keycloakId/reset-password",
             HttpMethod.PUT,
             request,
             String::class.java
