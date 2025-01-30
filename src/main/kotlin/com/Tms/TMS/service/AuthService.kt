@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.exchange
+import java.net.URLEncoder
 import java.security.SecureRandom
 
 
@@ -88,6 +89,8 @@ class AuthService (
             throw RuntimeException("Login failed", e)
         }
     }
+
+
     fun refresh(refreshToken: String): AuthResponse? {
         // Handles token refresh.
         try {

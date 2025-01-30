@@ -83,6 +83,7 @@ class EmployeeRepository(private val jdbcTemplate: JdbcTemplate) {
         try {
             return jdbcTemplate.queryForObject("SELECT * FROM employee WHERE id =?", rowMapper, id)
         } catch (ex: Exception) {
+            println("Employee not found" + ex.message)
             throw ex
         }
     }

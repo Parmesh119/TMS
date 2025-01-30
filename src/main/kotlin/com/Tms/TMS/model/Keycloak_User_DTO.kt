@@ -64,3 +64,7 @@ data class PasswordResetRequest (
     val confirmPassword: String? = "1234",
     val temporary: Boolean? = false
 )
+
+data class RefreshRequest(
+    val refresh_token: String
+)

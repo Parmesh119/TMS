@@ -2,10 +2,12 @@
 
     import com.Tms.TMS.model.AuthResponse
     import com.Tms.TMS.model.LoginRequest
+    import com.Tms.TMS.model.RefreshRequest
     import com.Tms.TMS.model.User
     import com.Tms.TMS.service.AuthService
     import org.springframework.http.ResponseEntity
     import org.springframework.web.bind.annotation.*
+
 
     @CrossOrigin
     @RestController
@@ -18,7 +20,7 @@
         }
 
         @PostMapping("/refresh")
-        fun refresh(@RequestBody refresh_token: String): ResponseEntity<Any> {
-            return ResponseEntity.ok(authService.refresh(refresh_token))
+        fun refresh(@RequestBody refreshRequest: RefreshRequest): ResponseEntity<Any> {
+            return ResponseEntity.ok(authService.refresh(refreshRequest.refresh_token))
         }
     }

@@ -54,7 +54,7 @@ class SecurityConfig(
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers("/api/v1/public/**").permitAll()
-                    .requestMatchers("/api/v1/users/**", "/api/v1/employees/**").hasRole("default-roles-tms")
+                    .requestMatchers("/api/v1/users/**", "/api/v1/employees/**").hasRole("ADMIN")
                     .requestMatchers("/api/v1/auth/**").permitAll()
                     .anyRequest().authenticated()
             }
@@ -81,8 +81,9 @@ class SecurityConfig(
 
     private fun extractAuthorities(jwt: Jwt): Collection<GrantedAuthority> {
         val authorities = mutableSetOf<GrantedAuthority>()
-        val resourceAccess = jwt.claims["realm_access"] as? Map<String, Any>
-        val roles = resourceAccess?.get("roles") as? List<String>
+        val resourceAccess = jwt.claims["resource_access"] as? Map<String, Any>
+        val clientRoles = resourceAccess?.get("Employee") as? Map<String, Any>
+        val roles = clientRoles?.get("roles") as? List<String>
         roles?.forEach { role ->
             authorities.add(SimpleGrantedAuthority("ROLE_$role"))
         }

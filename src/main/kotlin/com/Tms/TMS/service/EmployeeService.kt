@@ -88,7 +88,7 @@ class EmployeeService(
                 }
             )
             isEnabled = keycloakUserDto.enabled?: true
-            requiredActions = listOf("UPDATE_PASSWORD", "VERIFY_EMAIL")
+            requiredActions = listOf()
 
         }
 
@@ -116,12 +116,12 @@ class EmployeeService(
             }
 
             val roleRequest = HttpEntity(listOf(res), headers)
-            restTemplate.postForEntity(
+            val response_role = restTemplate.postForEntity(
                 "http://localhost:8080/admin/realms/TMS/users/$userId/role-mappings/clients/$clientid",
                 roleRequest,
                 Void::class.java
             )
-            run {
+             if(response_role.statusCode.is2xxSuccessful) {
                 authService.register(createUser)
                 employeeRepository.createEmployee(employee)
                 val loginLink = "http://example.com/login"
@@ -135,7 +135,9 @@ class EmployeeService(
                 """.trimIndent()
                 emailService.sendEmail(employee.email, "Welcome to TMS! Your New Account Created", emailBody)
                 return employee
-            }
+            } else {
+                throw RuntimeException("Failed to create user")
+             }
         }
         } catch (ex: Exception) {
             print(ex.message)
@@ -279,9 +281,11 @@ class EmployeeService(
     fun deleteEmployee(id: String, headers: HttpHeaders): Boolean {
         headers.contentType = MediaType.APPLICATION_JSON
 
-        val username = employeeRepository.getEmployeeById(id)?.email
-        val keycloak_id = username?.let { getIdByUsername(it, headers) }
-
+        val username = employeeRepository.getEmployeeById(id)
+        val keycloak_id = username?.let { getIdByUsername(it.email, headers) }
+        if(keycloak_id == null) {
+            throw Exception("Employee not found")
+        }
         val response = restTemplate.exchange(
             "$adminBaseUrl/users/$keycloak_id",
             HttpMethod.DELETE,
@@ -370,7 +374,7 @@ class EmployeeService(
             String::class.java
         )
         return if (response.statusCode.is2xxSuccessful) {
-            "Password reset successful"
+            authRepository.updateUserPassword(password, email)
         } else {
             throw Exception("Failed to reset password")
         }

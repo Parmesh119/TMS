@@ -3,10 +3,11 @@
     import com.Tms.TMS.model.User
     import org.springframework.jdbc.core.JdbcTemplate
     import org.springframework.jdbc.core.RowMapper
+    import org.springframework.security.crypto.password.PasswordEncoder
     import org.springframework.stereotype.Repository
 
     @Repository
-    class AuthRepository(private val jdbcTemplate: JdbcTemplate) {
+    class AuthRepository(private val jdbcTemplate: JdbcTemplate, private val passwordEncoder: PasswordEncoder) {
 
         private val rowMapper = RowMapper<User> { rs, _ ->
             User(
@@ -97,4 +98,12 @@
                 throw Exception("User not found")
             }
         }
+
+        fun updateUserPassword(password: String, email: String): String {
+            val passwordHash = passwordEncoder.encode(password)
+            val sql = "UPDATE users SET passwordHash = ? WHERE email = ?"
+            jdbcTemplate.update(sql, passwordHash, email)
+            return "Password updated successfully"
+        }
     }
+

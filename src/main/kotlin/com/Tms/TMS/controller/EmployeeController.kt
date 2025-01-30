@@ -9,8 +9,8 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.client.RestTemplate
 
-@CrossOrigin
 @RestController
+@CrossOrigin
 @RequestMapping("/api/v1/employees")
 class EmployeeController(
     private val employeeService: EmployeeService,
@@ -89,7 +89,7 @@ class EmployeeController(
         return ResponseEntity.ok(employeeService.deactivateEmployee(id, headers))
     }
 
-    @PostMapping("/reset-password/send-mail")
+    @PostMapping("/forgot-password/send-mail")
     fun sendResetPasswordEmail(@RequestBody emailRequest: EmailRequest): ResponseEntity<String> {
         return try {
             val accessToken = GenerateAccessToken.getAccessTokenFromOpenID()
