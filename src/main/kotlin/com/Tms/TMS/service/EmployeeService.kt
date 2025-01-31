@@ -126,14 +126,23 @@ class EmployeeService(
                 authService.register(createUser)
                 employeeRepository.createEmployee(employee)
                 val loginLink = "http://example.com/login"
-                val emailBody = """
-                                Welcome to our app!
-                                    Here are your login details:
-                                    Email: ${employee.email}
-                                    Password: ${password}
-                    
-                    Please log in within 12 hours: $loginLink
-                """.trimIndent()
+                 val emailBody = """
+    Welcome to [Your Company Name]!
+
+    Here are your login details:
+    Email: ${employee.email}
+    Password: ${password}
+
+    Please log in to your account using the link below within the next 12 hours:
+    $loginLink
+
+    For security reasons, we recommend changing your password after your first login.
+
+    If you have any questions or need assistance, please contact our support team at support@example.com.
+
+    Best regards,
+    The [Your Company Name] Team
+""".trimIndent()
                 emailService.sendEmail(employee.email, "Welcome to TMS! Your New Account Created", emailBody)
                 return employee
             } else {
