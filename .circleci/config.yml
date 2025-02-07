@@ -9,7 +9,7 @@ jobs:
       - setup_remote_docker
       - run:
           name: Build Docker Image
-          command: docker build -t $DOCKER_LOGIN/tms:latest
+          command: docker build -t $DOCKER_LOGIN/tms:latest .
       - persist_to_workspace:
           root: .
           paths:
