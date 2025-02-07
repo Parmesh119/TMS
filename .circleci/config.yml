@@ -19,7 +19,7 @@ jobs:
           command: echo $DOCKER_PASSWORD | docker login -u $DOCKER_LOGIN --password-stdin
       - run:
           name: Push Docker Image
-          command: echo "$DOCKER_LOGIN" | docker push $DOCKER_LOGIN/tms:latest
+          command: docker push $DOCKER_LOGIN/tms:latest
 
 workflows:
   version: 2
