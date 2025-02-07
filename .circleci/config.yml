@@ -1,0 +1,43 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      image: cimg/openjdk:23.0.2
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build Docker Image
+          command: |
+            docker build -t $DOCKER_LOGIN/tms:latest
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  push:
+    docker:
+      image: cimg/openjdk:23.0.2
+    steps:
+      - attach_workspace:
+          at: .
+      - setup_remote_docker
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u "$DOCKER_LOGIN" --password-stdin
+      - run:
+        name: Push Docker Image
+        command: push $DOCKER_LOGIN/tms:latest
+
+  workflows:
+    version: 2
+    build_and_push:
+      jobs:
+        - build
+        - push:
+            requires:
+              - build
+            filters:
+              branches:
+                only:
+                  - keycloak-TMS
