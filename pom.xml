@@ -178,11 +178,11 @@
 			<scope>import</scope>
 			<type>pom</type>
 		</dependency>
-		<dependency>
-			<groupId>org.flywaydb</groupId>
-			<artifactId>flyway-core</artifactId>
-			<version>9.22.0</version> <!-- Use the latest version -->
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>org.flywaydb</groupId>-->
+<!--			<artifactId>flyway-core</artifactId>-->
+<!--			<version>9.22.0</version> &lt;!&ndash; Use the latest version &ndash;&gt;-->
+<!--		</dependency>-->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

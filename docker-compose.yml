@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5434/postgres?currentSchema=public
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=kavipam27
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+      - SERVER_PORT=8081
+    networks:
+      - tms-network
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=kavipam27
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tms-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  tms-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
