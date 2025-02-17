@@ -3,7 +3,7 @@ package com.Tms.TMS.controller
 import com.Tms.TMS.model.ListLocationsInput
 import com.Tms.TMS.model.Location
 import com.Tms.TMS.service.LocationService
-import com.Tms.TMS.util.MetricsUtil  // Import MetricsUtil
+import com.Tms.TMS.util.MetricsUtil
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 class LocationController(private val locationService: LocationService) {
 
     @Autowired
-    private lateinit var metricsUtil: MetricsUtil  // Inject MetricsUtil
+    private lateinit var metricsUtil: MetricsUtil
 
     private val baseUrl = "/api/v1/locations"
     private val listLocationsEndpoint = "$baseUrl/list"
@@ -67,7 +67,7 @@ class LocationController(private val locationService: LocationService) {
         }
     }
 
-    //    Get location by id
+    // Get location by id
     @GetMapping("/get/{id}")
     fun getLocationById(@PathVariable id: String): ResponseEntity<Location> {
         val startTime = System.nanoTime()
@@ -87,7 +87,7 @@ class LocationController(private val locationService: LocationService) {
         }
     }
 
-    //    Create location
+    // Create location
     @PostMapping("/create")
     fun createLocation(@RequestBody location: Location): ResponseEntity<Location> {
         val startTime = System.nanoTime()
@@ -107,7 +107,7 @@ class LocationController(private val locationService: LocationService) {
         }
     }
 
-    //    Update location
+    // Update location
     @PostMapping("/update")
     fun updateLocation(@RequestBody location: Location): ResponseEntity<Location> {
         val startTime = System.nanoTime()
@@ -128,7 +128,7 @@ class LocationController(private val locationService: LocationService) {
         }
     }
 
-    //    Delete location
+    // Delete location
     @DeleteMapping("/delete/{id}")
     fun deleteLocation(@PathVariable id: String): ResponseEntity<Boolean> {
         val startTime = System.nanoTime()

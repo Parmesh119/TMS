@@ -1,18 +1,15 @@
 package com.Tms.TMS.controller
 
 import com.Tms.TMS.model.*
-import com.Tms.TMS.service.EmailService
 import com.Tms.TMS.service.EmployeeService
 import com.Tms.TMS.service.GenerateAccessToken
 import com.Tms.TMS.util.MetricsUtil
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.client.RestTemplate
 import jakarta.annotation.PostConstruct
-import org.springframework.beans.factory.annotation.Autowired  // Correct import
+import org.springframework.beans.factory.annotation.Autowired
 import java.util.concurrent.TimeUnit
-
 
 @RestController
 @CrossOrigin
@@ -24,7 +21,7 @@ class EmployeeController {
     @Autowired
     private lateinit var generateAccessToken: GenerateAccessToken
     @Autowired
-    private lateinit var metricsUtil: MetricsUtil  // Inject MetricsUtil
+    private lateinit var metricsUtil: MetricsUtil
 
     private val baseUrl = "/api/v1/employees"
     private val employeeListEndpoint = "$baseUrl/list"
@@ -35,7 +32,6 @@ class EmployeeController {
     private val deactivateEmployeeEndpoint = "$baseUrl/deactivate/{id}"
     private val sendResetPasswordEmailEndpoint = "$baseUrl/forgot-password/send-mail"
     private val resetPasswordEndpoint = "$baseUrl/reset-password"
-
 
     @PostConstruct
     fun init() {
@@ -55,7 +51,7 @@ class EmployeeController {
         val startTime = System.nanoTime()
         var status = "success"
         val endpoint = employeeListEndpoint
-        metricsUtil.trackActiveRequests(endpoint, true) // Start tracking active requests
+        metricsUtil.trackActiveRequests(endpoint, true)
 
         return try {
             val employeeList = employeeService.getAllEmployee(employeeListRequest.search, employeeListRequest.roles, employeeListRequest.statuses, employeeListRequest.page, employeeListRequest.size)
@@ -66,7 +62,7 @@ class EmployeeController {
         } finally {
             val timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
             metricsUtil.recordApiMetrics(endpoint, status, timeTaken)
-            metricsUtil.trackActiveRequests(endpoint, false) // End tracking active requests
+            metricsUtil.trackActiveRequests(endpoint, false)
         }
     }
 
@@ -76,7 +72,7 @@ class EmployeeController {
         val startTime = System.nanoTime()
         var status = "success"
         val endpoint = getEmployeeByIdEndpoint
-        metricsUtil.trackActiveRequests(endpoint, true) // Start tracking active requests
+        metricsUtil.trackActiveRequests(endpoint, true)
         return try {
             val accessToken = generateAccessToken.getAccessTokenFromOpenID()
             val headers = generateAccessToken.createHeaders(accessToken)
@@ -88,7 +84,7 @@ class EmployeeController {
         } finally {
             val timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
             metricsUtil.recordApiMetrics(endpoint, status, timeTaken)
-            metricsUtil.trackActiveRequests(endpoint, false) // End tracking active requests
+            metricsUtil.trackActiveRequests(endpoint, false)
         }
     }
 
@@ -98,7 +94,7 @@ class EmployeeController {
         val startTime = System.nanoTime()
         var status = "success"
         val endpoint = createEmployeeEndpoint
-        metricsUtil.trackActiveRequests(endpoint, true) // Start tracking active requests
+        metricsUtil.trackActiveRequests(endpoint, true)
         return try {
             val keycloakUserDto = Keycloak_User_DTO(
                 username = employee.email,
@@ -118,7 +114,7 @@ class EmployeeController {
         } finally {
             val timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
             metricsUtil.recordApiMetrics(endpoint, status, timeTaken)
-            metricsUtil.trackActiveRequests(endpoint, false) // End tracking active requests
+            metricsUtil.trackActiveRequests(endpoint, false)
         }
     }
 
@@ -127,7 +123,7 @@ class EmployeeController {
         val startTime = System.nanoTime()
         var status = "success"
         val endpoint = updateEmployeeEndpoint
-        metricsUtil.trackActiveRequests(endpoint, true) // Start tracking active requests
+        metricsUtil.trackActiveRequests(endpoint, true)
 
         return try {
             val id = employee.id!!
@@ -149,29 +145,29 @@ class EmployeeController {
         } finally {
             val timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
             metricsUtil.recordApiMetrics(endpoint, status, timeTaken)
-            metricsUtil.trackActiveRequests(endpoint, false) // End tracking active requests
+            metricsUtil.trackActiveRequests(endpoint, false)
         }
     }
 
     // delete employee
     @DeleteMapping("/delete/{id}")
-    fun deleteEmployee(@PathVariable id: String): ResponseEntity<Boolean> {  // Change return type to ResponseEntity<Boolean>
+    fun deleteEmployee(@PathVariable id: String): ResponseEntity<Boolean> {
         val startTime = System.nanoTime()
         var status = "success"
         val endpoint = deleteEmployeeEndpoint
-        metricsUtil.trackActiveRequests(endpoint, true) // Start tracking active requests
+        metricsUtil.trackActiveRequests(endpoint, true)
         return try {
             val token = generateAccessToken.getAccessTokenFromOpenID()
             val headers = generateAccessToken.createHeaders(token)
             val deleted = employeeService.deleteEmployee(id, headers)
-            ResponseEntity.ok(deleted)  // Return the boolean result
+            ResponseEntity.ok(deleted)
         } catch (e: Exception) {
             status = "error"
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false) // Return false on error
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(false)
         } finally {
             val timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
             metricsUtil.recordApiMetrics(endpoint, status, timeTaken)
-            metricsUtil.trackActiveRequests(endpoint, false) // End tracking active requests
+            metricsUtil.trackActiveRequests(endpoint, false)
         }
     }
 
@@ -180,7 +176,7 @@ class EmployeeController {
         val startTime = System.nanoTime()
         var status = "success"
         val endpoint = deactivateEmployeeEndpoint
-        metricsUtil.trackActiveRequests(endpoint, true) // Start tracking active requests
+        metricsUtil.trackActiveRequests(endpoint, true)
 
         return try {
             val token = generateAccessToken.getAccessTokenFromOpenID()
@@ -194,7 +190,7 @@ class EmployeeController {
         } finally {
             val timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
             metricsUtil.recordApiMetrics(endpoint, status, timeTaken)
-            metricsUtil.trackActiveRequests(endpoint, false) // End tracking active requests
+            metricsUtil.trackActiveRequests(endpoint, false)
         }
     }
 
@@ -203,7 +199,7 @@ class EmployeeController {
         val startTime = System.nanoTime()
         var status = "success"
         val endpoint = sendResetPasswordEmailEndpoint
-        metricsUtil.trackActiveRequests(endpoint, true) // Start tracking active requests
+        metricsUtil.trackActiveRequests(endpoint, true)
 
         return try {
             val accessToken = generateAccessToken.getAccessTokenFromOpenID()
@@ -218,7 +214,7 @@ class EmployeeController {
         } finally {
             val timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
             metricsUtil.recordApiMetrics(endpoint, status, timeTaken)
-            metricsUtil.trackActiveRequests(endpoint, false) // End tracking active requests
+            metricsUtil.trackActiveRequests(endpoint, false)
         }
     }
 
@@ -227,7 +223,7 @@ class EmployeeController {
         val startTime = System.nanoTime()
         var status = "success"
         val endpoint = resetPasswordEndpoint
-        metricsUtil.trackActiveRequests(endpoint, true) // Start tracking active requests
+        metricsUtil.trackActiveRequests(endpoint, true)
 
         return try {
             if(passwordResetRequest.password != passwordResetRequest.confirmPassword) {
@@ -252,13 +248,12 @@ class EmployeeController {
         } finally {
             val timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)
             metricsUtil.recordApiMetrics(endpoint, status, timeTaken)
-            metricsUtil.trackActiveRequests(endpoint, false) // End tracking active requests
+            metricsUtil.trackActiveRequests(endpoint, false)
         }
     }
 
 
     //For the global and per endpoints metrics
-
     @GetMapping("/metrics")
     fun getMetrics(): ResponseEntity<Map<String, Any>> {
         val detailedMetrics = metricsUtil.getEndpointMetrics()
