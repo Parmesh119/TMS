@@ -57,7 +57,7 @@ class SecurityConfig(
                 auth
                     .requestMatchers("/api/v1/public/**").permitAll()
                     .requestMatchers( "/api/v1/employees/**").hasRole("ADMIN")
-                    .requestMatchers("/api/v1/auth/**").permitAll()
+                    .requestMatchers("/api/v1/auth/**", "/actuator/prometheus").permitAll()
                     .anyRequest().authenticated()
             }
             .sessionManagement { session ->
