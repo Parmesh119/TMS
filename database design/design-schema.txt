@@ -1,0 +1,130 @@
+erDiagram
+    state {
+        string state_id PK
+        string State
+    }
+    
+    District {
+        string d_id PK
+        string name
+        string state_id
+    }
+
+    Taluka {
+        string t_id PK
+        string name
+        string district_id FK
+    }
+    
+    Location {
+        string l_id PK
+        string name
+        string point_of_contact 
+        string taluka_id FK
+    }
+
+    Unit{
+        string u_id PK
+        string unit
+    }
+
+    Supplier {
+        string s_id PK
+        string name
+        string phone
+        string address_1
+        string address_2
+        string email
+        string point_of_contact 
+        string princode
+        string state
+        string taluka
+        string city
+        string location 
+    }
+    
+    DO {
+        string do_id PK
+        string supplier_id FK
+        string do_s_id
+        string phone
+        date date
+        string status
+    }
+    
+    DO_Items {
+        string di_id PK
+        string u_id
+        string do_id FK
+        string district_id FK
+        string taluka_id FK
+        string location_id FK
+        date due_date
+        string m_id FK
+        int quantity
+        float rate
+        string unit
+        string status
+    }
+    
+    DC {
+        string dc_id PK
+        string do_id FK
+    }
+    
+    DC_Items {
+        string dc_item_id PK
+        string dc_id FK
+        string do_item_id FK
+        int expected_quantity
+        date date
+        string status
+    }
+    
+    Driver {
+        string dr_id PK
+        string company
+        string name
+    }
+    
+    Vehicle {
+        string v_id PK
+        string name
+        string number
+        string rc_book
+    }
+    
+    Material {
+        string m_id PK
+        string name
+    }
+
+    Transport_Company {
+        string company_id PK
+        string name
+
+    }
+
+
+    Company {
+        string id PK
+        string name 
+        int number
+        string email
+    
+    }
+    
+    District ||--o{ Taluka : "has"
+    Taluka ||--o{ Location : "has"
+    Supplier ||--o{ DO : "provides"
+    DO ||--o{ DO_Items : "contains"
+    Material ||--o{ DO_Items : "used in"
+    DO ||--o{ DC : "results in"
+    DC ||--o{ DC_Items : "contains"
+    DO_Items ||--o{ DC_Items : "maps to"
+    DO_Items ||--o{ Unit: "used in"
+    Transport_Company ||--o{Vehicle: "operates"
+    Company ||--o{DO: "has"
+    Transport_Company ||--o{Driver: "has"
+    Driver ||--o{Vehicle: "usage"
+    state ||--o{District: "has"

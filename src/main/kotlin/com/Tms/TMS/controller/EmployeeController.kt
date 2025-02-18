@@ -48,6 +48,7 @@ class EmployeeController {
     // List of all employee
     @PostMapping("/list")
     fun getEmployee(@RequestBody employeeListRequest: EmployeeListRequest): ResponseEntity<List<Employee>> {
+        Thread.sleep(10000)
         val startTime = System.nanoTime()
         var status = "success"
         val endpoint = employeeListEndpoint
